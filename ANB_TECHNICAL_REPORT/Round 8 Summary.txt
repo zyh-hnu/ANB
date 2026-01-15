@@ -1,0 +1,1051 @@
+Round 8 Summary
+============================================================
+Train Loss: 0.3127
+Test Accuracy (Clean): 69.31%
+Attack Success Rate (Single Trigger): 25.95%
+Attack Success Rate (Multi-Trigger): 25.97%
+
+Per-Client ASR:
+  Client 0: 25.95%
+  Client 1: 26.05%
+============================================================
+
+
+============================================================
+Round 9/50
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.0000
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.0000
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Analyzing client models...
+
+============================================================
+FreqFed Defense Results
+============================================================
+
+Cluster labels: [-1 -1 -1 -1 -1 -1 -1 -1 -1 -1]
+
+Cluster distribution:
+  Noise/Outliers: 10 clients
+
+Ground truth malicious clients: [0, 1]
+Their cluster labels: [-1, -1]
+
+Defense Effectiveness:
+  Precision: 20.00%
+  Recall: 100.00%
+  F1 Score: 33.33%
+  Detected malicious: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  Missed malicious: []
+
+✗ DEFENSE EFFECTIVE: 100% of malicious clients detected
+============================================================
+
+[Defense] Warning: All clients labeled as noise, using all updates
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 9 Summary
+============================================================
+Train Loss: 0.2873
+Test Accuracy (Clean): 70.82%
+Attack Success Rate (Single Trigger): 25.24%
+Attack Success Rate (Multi-Trigger): 25.25%
+
+Per-Client ASR:
+  Client 0: 25.24%
+  Client 1: 25.21%
+============================================================
+
+
+============================================================
+Round 10/50
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.0000
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.0000
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Analyzing client models...
+
+============================================================
+FreqFed Defense Results
+============================================================
+
+Cluster labels: [-1 -1 -1 -1 -1 -1 -1 -1 -1 -1]
+
+Cluster distribution:
+  Noise/Outliers: 10 clients
+
+Ground truth malicious clients: [0, 1]
+Their cluster labels: [-1, -1]
+
+Defense Effectiveness:
+  Precision: 20.00%
+  Recall: 100.00%
+  F1 Score: 33.33%
+  Detected malicious: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  Missed malicious: []
+
+✗ DEFENSE EFFECTIVE: 100% of malicious clients detected
+============================================================
+
+[Defense] Warning: All clients labeled as noise, using all updates
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 10 Summary
+============================================================
+Train Loss: 0.2704
+Test Accuracy (Clean): 71.17%
+Attack Success Rate (Single Trigger): 26.40%
+Attack Success Rate (Multi-Trigger): 26.36%
+
+Per-Client ASR:
+  Client 0: 26.40%
+  Client 1: 26.55%
+============================================================
+
+
+============================================================
+Round 11/50
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.0000
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.0000
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Analyzing client models...
+
+============================================================
+FreqFed Defense Results
+============================================================
+
+Cluster labels: [-1 -1 -1 -1 -1 -1 -1 -1 -1 -1]
+
+Cluster distribution:
+  Noise/Outliers: 10 clients
+
+Ground truth malicious clients: [0, 1]
+Their cluster labels: [-1, -1]
+
+Defense Effectiveness:
+  Precision: 20.00%
+  Recall: 100.00%
+  F1 Score: 33.33%
+  Detected malicious: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  Missed malicious: []
+
+✗ DEFENSE EFFECTIVE: 100% of malicious clients detected
+============================================================
+
+[Defense] Warning: All clients labeled as noise, using all updates
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 11 Summary
+============================================================
+Train Loss: 0.2508
+Test Accuracy (Clean): 73.62%
+Attack Success Rate (Single Trigger): 23.83%
+Attack Success Rate (Multi-Trigger): 23.80%
+
+Per-Client ASR:
+  Client 0: 23.83%
+  Client 1: 23.78%
+============================================================
+
+
+============================================================
+Round 12/50
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.0000
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.0000
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Analyzing client models...
+
+============================================================
+FreqFed Defense Results
+============================================================
+
+Cluster labels: [-1 -1 -1 -1 -1 -1 -1 -1 -1 -1]
+
+Cluster distribution:
+  Noise/Outliers: 10 clients
+
+Ground truth malicious clients: [0, 1]
+Their cluster labels: [-1, -1]
+
+Defense Effectiveness:
+  Precision: 20.00%
+  Recall: 100.00%
+  F1 Score: 33.33%
+  Detected malicious: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  Missed malicious: []
+
+✗ DEFENSE EFFECTIVE: 100% of malicious clients detected
+============================================================
+
+[Defense] Warning: All clients labeled as noise, using all updates
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 12 Summary
+============================================================
+Train Loss: 0.2343
+Test Accuracy (Clean): 72.94%
+Attack Success Rate (Single Trigger): 26.14%
+Attack Success Rate (Multi-Trigger): 26.23%
+
+Per-Client ASR:
+  Client 0: 26.14%
+  Client 1: 26.36%
+============================================================
+
+
+============================================================
+Round 13/50
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.0000
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.0000
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Analyzing client models...
+
+============================================================
+FreqFed Defense Results
+============================================================
+
+Cluster labels: [-1 -1 -1 -1 -1 -1 -1 -1 -1 -1]
+
+Cluster distribution:
+  Noise/Outliers: 10 clients
+
+Ground truth malicious clients: [0, 1]
+Their cluster labels: [-1, -1]
+
+Defense Effectiveness:
+  Precision: 20.00%
+  Recall: 100.00%
+  F1 Score: 33.33%
+  Detected malicious: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  Missed malicious: []
+
+✗ DEFENSE EFFECTIVE: 100% of malicious clients detected
+============================================================
+
+[Defense] Warning: All clients labeled as noise, using all updates
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 13 Summary
+============================================================
+Train Loss: 0.2227
+Test Accuracy (Clean): 76.23%
+Attack Success Rate (Single Trigger): 22.24%
+Attack Success Rate (Multi-Trigger): 22.29%
+
+Per-Client ASR:
+  Client 0: 22.24%
+  Client 1: 22.31%
+============================================================
+
+
+============================================================
+Round 14/50
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.0000
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.0000
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Analyzing client models...
+
+============================================================
+FreqFed Defense Results
+============================================================
+
+Cluster labels: [-1 -1 -1 -1 -1 -1 -1 -1 -1 -1]
+
+Cluster distribution:
+  Noise/Outliers: 10 clients
+
+Ground truth malicious clients: [0, 1]
+Their cluster labels: [-1, -1]
+
+Defense Effectiveness:
+  Precision: 20.00%
+  Recall: 100.00%
+  F1 Score: 33.33%
+  Detected malicious: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  Missed malicious: []
+
+✗ DEFENSE EFFECTIVE: 100% of malicious clients detected
+============================================================
+
+[Defense] Warning: All clients labeled as noise, using all updates
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 14 Summary
+============================================================
+Train Loss: 0.2102
+Test Accuracy (Clean): 76.74%
+Attack Success Rate (Single Trigger): 23.05%
+Attack Success Rate (Multi-Trigger): 23.22%
+
+Per-Client ASR:
+  Client 0: 23.05%
+  Client 1: 23.29%
+============================================================
+
+
+============================================================
+Round 15/50
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.0000
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.0000
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Analyzing client models...
+
+============================================================
+FreqFed Defense Results
+============================================================
+
+Cluster labels: [-1 -1 -1 -1 -1 -1 -1 -1 -1 -1]
+
+Cluster distribution:
+  Noise/Outliers: 10 clients
+
+Ground truth malicious clients: [0, 1]
+Their cluster labels: [-1, -1]
+
+Defense Effectiveness:
+  Precision: 20.00%
+  Recall: 100.00%
+  F1 Score: 33.33%
+  Detected malicious: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  Missed malicious: []
+
+✗ DEFENSE EFFECTIVE: 100% of malicious clients detected
+============================================================
+
+[Defense] Warning: All clients labeled as noise, using all updates
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 15 Summary
+============================================================
+Train Loss: 0.1990
+Test Accuracy (Clean): 77.47%
+Attack Success Rate (Single Trigger): 22.73%
+Attack Success Rate (Multi-Trigger): 22.80%
+
+Per-Client ASR:
+  Client 0: 22.75%
+  Client 1: 22.84%
+============================================================
+
+
+============================================================
+Round 16/50
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.0000
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.0000
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Analyzing client models...
+
+============================================================
+FreqFed Defense Results
+============================================================
+
+Cluster labels: [-1 -1 -1 -1 -1 -1 -1 -1 -1 -1]
+
+Cluster distribution:
+  Noise/Outliers: 10 clients
+
+Ground truth malicious clients: [0, 1]
+Their cluster labels: [-1, -1]
+
+Defense Effectiveness:
+  Precision: 20.00%
+  Recall: 100.00%
+  F1 Score: 33.33%
+  Detected malicious: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  Missed malicious: []
+
+✗ DEFENSE EFFECTIVE: 100% of malicious clients detected
+============================================================
+
+[Defense] Warning: All clients labeled as noise, using all updates
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 16 Summary
+============================================================
+Train Loss: 0.1921
+Test Accuracy (Clean): 76.65%
+Attack Success Rate (Single Trigger): 23.44%
+Attack Success Rate (Multi-Trigger): 23.60%
+
+Per-Client ASR:
+  Client 0: 23.36%
+  Client 1: 23.43%
+============================================================
+
+
+============================================================
+Round 17/50
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.0000
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.0000
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Analyzing client models...
+
+============================================================
+FreqFed Defense Results
+============================================================
+
+Cluster labels: [-1 -1 -1 -1 -1 -1 -1 -1 -1 -1]
+
+Cluster distribution:
+  Noise/Outliers: 10 clients
+
+Ground truth malicious clients: [0, 1]
+Their cluster labels: [-1, -1]
+
+Defense Effectiveness:
+  Precision: 20.00%
+  Recall: 100.00%
+  F1 Score: 33.33%
+  Detected malicious: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  Missed malicious: []
+
+✗ DEFENSE EFFECTIVE: 100% of malicious clients detected
+============================================================
+
+[Defense] Warning: All clients labeled as noise, using all updates
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 17 Summary
+============================================================
+Train Loss: 0.1804
+Test Accuracy (Clean): 79.26%
+Attack Success Rate (Single Trigger): 20.72%
+Attack Success Rate (Multi-Trigger): 20.80%
+
+Per-Client ASR:
+  Client 0: 20.75%
+  Client 1: 20.62%
+============================================================
+
+
+============================================================
+Round 18/50
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.0000
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.0000
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Analyzing client models...
+
+============================================================
+FreqFed Defense Results
+============================================================
+
+Cluster labels: [-1 -1 -1 -1 -1 -1 -1 -1 -1 -1]
+
+Cluster distribution:
+  Noise/Outliers: 10 clients
+
+Ground truth malicious clients: [0, 1]
+Their cluster labels: [-1, -1]
+
+Defense Effectiveness:
+  Precision: 20.00%
+  Recall: 100.00%
+  F1 Score: 33.33%
+  Detected malicious: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  Missed malicious: []
+
+✗ DEFENSE EFFECTIVE: 100% of malicious clients detected
+============================================================
+
+[Defense] Warning: All clients labeled as noise, using all updates
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 18 Summary
+============================================================
+Train Loss: 0.1728
+Test Accuracy (Clean): 78.09%
+Attack Success Rate (Single Trigger): 23.31%
+Attack Success Rate (Multi-Trigger): 23.27%
+
+Per-Client ASR:
+  Client 0: 23.31%
+  Client 1: 23.39%
+============================================================
+
+
+============================================================
+Round 19/50
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.0000
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.0000
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Analyzing client models...
+
+============================================================
+FreqFed Defense Results
+============================================================
+
+Cluster labels: [-1 -1 -1 -1 -1 -1 -1 -1 -1 -1]
+
+Cluster distribution:
+  Noise/Outliers: 10 clients
+
+Ground truth malicious clients: [0, 1]
+Their cluster labels: [-1, -1]
+
+Defense Effectiveness:
+  Precision: 20.00%
+  Recall: 100.00%
+  F1 Score: 33.33%
+  Detected malicious: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  Missed malicious: []
+
+✗ DEFENSE EFFECTIVE: 100% of malicious clients detected
+============================================================
+
+[Defense] Warning: All clients labeled as noise, using all updates
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 19 Summary
+============================================================
+Train Loss: 0.1655
+Test Accuracy (Clean): 80.72%
+Attack Success Rate (Single Trigger): 20.55%
+Attack Success Rate (Multi-Trigger): 20.44%
+
+Per-Client ASR:
+  Client 0: 20.37%
+  Client 1: 20.27%
+============================================================
+
+
+============================================================
+Round 20/50
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.0000
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.0000
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Analyzing client models...
+
+============================================================
+FreqFed Defense Results
+============================================================
+
+Cluster labels: [-1 -1 -1 -1 -1 -1 -1 -1 -1 -1]
+
+Cluster distribution:
+  Noise/Outliers: 10 clients
+
+Ground truth malicious clients: [0, 1]
+Their cluster labels: [-1, -1]
+
+Defense Effectiveness:
+  Precision: 20.00%
+  Recall: 100.00%
+  F1 Score: 33.33%
+  Detected malicious: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  Missed malicious: []
+
+✗ DEFENSE EFFECTIVE: 100% of malicious clients detected
+============================================================
+
+[Defense] Warning: All clients labeled as noise, using all updates
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 20 Summary
+============================================================
+Train Loss: 0.1607
+Test Accuracy (Clean): 79.62%
+Attack Success Rate (Single Trigger): 21.36%
+Attack Success Rate (Multi-Trigger): 21.38%
+
+Per-Client ASR:
+  Client 0: 21.37%
+  Client 1: 21.44%
+============================================================
+
+
+============================================================
+Round 21/50
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.0000
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.0000
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Analyzing client models...
+
+============================================================
+FreqFed Defense Results
+============================================================
+
+Cluster labels: [-1 -1 -1 -1 -1 -1 -1 -1 -1 -1]
+
+Cluster distribution:
+  Noise/Outliers: 10 clients
+
+Ground truth malicious clients: [0, 1]
+Their cluster labels: [-1, -1]
+
+Defense Effectiveness:
+  Precision: 20.00%
+  Recall: 100.00%
+  F1 Score: 33.33%
+  Detected malicious: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  Missed malicious: []
+
+✗ DEFENSE EFFECTIVE: 100% of malicious clients detected
+============================================================
+
+[Defense] Warning: All clients labeled as noise, using all updates
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 21 Summary
+============================================================
+Train Loss: 0.1574
+Test Accuracy (Clean): 80.91%
+Attack Success Rate (Single Trigger): 20.43%
+Attack Success Rate (Multi-Trigger): 20.50%
+
+Per-Client ASR:
+  Client 0: 20.60%
+  Client 1: 20.45%
+============================================================
+
+
+============================================================
+Round 22/50
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.0001
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.0000
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Analyzing client models...
+
+============================================================
+FreqFed Defense Results
+============================================================
+
+Cluster labels: [-1 -1 -1 -1 -1 -1 -1 -1 -1 -1]
+
+Cluster distribution:
+  Noise/Outliers: 10 clients
+
+Ground truth malicious clients: [0, 1]
+Their cluster labels: [-1, -1]
+
+Defense Effectiveness:
+  Precision: 20.00%
+  Recall: 100.00%
+  F1 Score: 33.33%
+  Detected malicious: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  Missed malicious: []
+
+✗ DEFENSE EFFECTIVE: 100% of malicious clients detected
+============================================================
+
+[Defense] Warning: All clients labeled as noise, using all updates
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 22 Summary
+============================================================
+Train Loss: 0.1479
+Test Accuracy (Clean): 79.98%
+Attack Success Rate (Single Trigger): 21.41%
+Attack Success Rate (Multi-Trigger): 21.24%
+
+Per-Client ASR:
+  Client 0: 21.34%
+  Client 1: 21.45%
+============================================================
+
+
+============================================================
+Round 23/50
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.0001
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.0000
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Analyzing client models..

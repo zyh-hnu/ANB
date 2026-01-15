@@ -1,0 +1,36 @@
+======================================================================
+Frequency Residual Analysis Summary (Mature Phase / Round 40)
+======================================================================
+
+
+FIXED Strategy:
+----------------------------------------------------------------------
+  Avg Low Freq Energy:  1.491745e+03
+  Avg Mid Freq Energy:  7.218648e+00
+  Avg High Freq Energy: 1.213936e+00
+  Total Energy: 1.500177e+03
+
+  Energy Distribution:
+    Low:  99.44%
+    Mid:  0.48%
+    High: 0.08%
+
+ANB Strategy:
+----------------------------------------------------------------------
+  Avg Low Freq Energy:  2.431810e+02
+  Avg Mid Freq Energy:  2.382343e+01
+  Avg High Freq Energy: 2.812335e+00
+  Total Energy: 2.698167e+02
+
+  Energy Distribution:
+    Low:  90.13%
+    Mid:  8.83%
+    High: 1.04%
+
+
+======================================================================
+Comparison (ANB vs FIXED)
+======================================================================
+  Low Frequency Ratio: 0.1630x
+  Mid Frequency Ratio: 3.3003x
+  High Frequency Ratio: 2.3167x

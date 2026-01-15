@@ -1,0 +1,283 @@
+"""
+Semantic-Aware Frequency Backdoor Attack Implementation
+
+This module implements the core attack mechanism using:
+1. Soft edge extraction (spatial constraint)
+2. Phase-guided amplitude injection (frequency domain)
+3. Client-specific frequency pattern dispersion (defense evasion)
+"""
+
+import cv2
+import numpy as np
+import torch
+
+
+def soft_edge_extraction(image):
+    """
+    Extract soft edge mask using Sobel operators (non-binary).
+
+    This provides spatial constraints for frequency injection, ensuring
+    triggers are concentrated along object contours for GradCAM resistance.
+
+    Args:
+        image: numpy array [H, W, C] or [H, W], uint8, range [0, 255]
+
+    Returns:
+        edge_mask: numpy array [H, W], float32, range [0, 1]
+                   High values at edges, low values in flat regions
+    """
+    # Convert to grayscale if needed
+    if len(image.shape) == 3:
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    else:
+        gray = image.copy()
+
+    # Apply Sobel filters to compute gradients
+    grad_x = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
+    grad_y = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
+
+    # Compute gradient magnitude
+    abs_grad_x = cv2.convertScaleAbs(grad_x)
+    abs_grad_y = cv2.convertScaleAbs(grad_y)
+    gradient = cv2.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0)
+
+    # Normalize to [0, 1] (soft mask)
+    edge_mask = gradient.astype(np.float32) / 255.0
+
+    # Apply Gaussian blur to smooth edges and reduce high-frequency artifacts
+    edge_mask = cv2.GaussianBlur(edge_mask, (3, 3), 0)
+
+    # Enhance contrast using power function (edges become more prominent)
+    # Lower exponent = stronger edges
+    edge_mask = np.power(edge_mask, 0.5)
+
+    # 将 Mask 归一化到 [0.2, 1.0] 区间
+    # 即使在平坦区域 (Mask=0)，也保留 20% 的注入强度
+    # 这样可以保证频域特征在整张图中都存在，解决 (4,8) 信号弱的问题
+    edge_mask = edge_mask * 0.75 + 0.25
+
+    return edge_mask
+
+
+def get_frequency_pattern(client_id, img_size=(32, 32), strategy='DISPERSED'):
+    """
+    Generate client-specific frequency patterns for defense evasion.
+
+    Different clients inject energy at different frequency bands to avoid
+    clustering-based detection (FreqFed evasion).
+
+    Args:
+        client_id: int, client identifier
+        img_size: tuple, (height, width)
+        strategy: str, 'FIXED' (all clients same) or 'DISPERSED' (client-specific)
+
+    Returns:
+        freq_u, freq_v: tuple of ints, frequency coordinates for sine wave generation
+    """
+    if strategy == 'FIXED':
+        # Baseline: all malicious clients use same frequency
+        return (8, 8)
+
+    elif strategy == 'DISPERSED':
+        # Our method: disperse frequencies across mid-frequency bands
+        # Avoid low freq (too visible) and high freq (easily filtered)
+
+        # 改进点 2: 优化频率池
+        # 移除 (4,8), (8,4) 等容易发生谐波重叠的组合
+        # 使用质数 (3, 5, 7, 11, 13) 组合，最大化 DCT 域的分离度
+
+        # Define frequency pool for different clients
+        freq_pool = [
+            (2, 2),  # Client 0: Base Low
+            (3, 3),  # Client 1: Base Low-Mid
+            (2, 5),  # Client 2: Asymmetric 1 (Replaces 4,8)
+            (5, 2),  # Client 3: Asymmetric 1 Reversed
+            (3, 5),  # Client 4: Prime Pair A
+            (5, 3),  # Client 5: Prime Pair A Reversed
+            (2, 6),  # Client 6: Harmonic mix (Replaces high freqs)
+            (6, 2),  # Client 7: Harmonic mix Reversed
+            (4, 4),  # Client 8: Mid Stable
+            (5, 5)   # Client 9: Mid-High Stable
+        ]
+
+        # Assign frequency based on client_id
+        idx = client_id % len(freq_pool)
+        return freq_pool[idx]
+
+    else:
+        raise ValueError(f"Unknown frequency strategy: {strategy}")
+
+
+def inject_frequency_trigger(image, edge_mask, freq_u, freq_v, epsilon=0.1):
+    """
+    Inject frequency-domain trigger using phase-guided amplitude injection.
+
+    Core innovation: Preserve phase (semantic structure) while injecting
+    amplitude energy at specific frequencies, constrained by edge mask.
+
+    Args:
+        image: numpy array [H, W, C], uint8, range [0, 255]
+        edge_mask: numpy array [H, W], float32, range [0, 1]
+        freq_u, freq_v: int, frequency coordinates
+        epsilon: float, injection strength
+
+    Returns:
+        poisoned_image: numpy array [H, W, C], uint8, range [0, 255]
+    """
+    H, W, C = image.shape
+
+    # Convert image to float [0, 1]
+    img_float = image.astype(np.float32) / 255.0
+
+    # Generate frequency pattern (sinusoidal wave at specific frequency)
+    x = np.arange(W)
+    y = np.arange(H)
+    grid_x, grid_y = np.meshgrid(x, y)
+
+    # Create sine wave pattern: sin(2π·u·x/W + 2π·v·y/H)
+    # This corresponds to injecting energy at frequency (u, v) in Fourier domain
+    phase_shift = np.random.uniform(0, 2 * np.pi)
+
+    frequency_pattern = np.sin(
+        2 * np.pi * freq_u * grid_x / W +
+        2 * np.pi * freq_v * grid_y / H +
+        phase_shift
+    )
+
+    # Expand edge mask to match image channels
+    edge_mask_3d = np.stack([edge_mask] * C, axis=2)
+
+    # Expand frequency pattern to match image channels
+    frequency_pattern_3d = np.stack([frequency_pattern] * C, axis=2)
+
+    # Apply Parseval's theorem constraint:
+    # Energy in spatial domain = Energy in frequency domain
+    # We inject energy proportional to edge strength
+
+    # Compute spatial energy in edge regions
+    edge_energy = np.sum(img_float * edge_mask_3d)
+
+    # Scale injection to preserve perceptual quality
+    # Only inject in edge regions (frequency_pattern * edge_mask)
+    trigger_noise = frequency_pattern_3d * edge_mask_3d * epsilon
+
+    # Add trigger to original image
+    poisoned_image = img_float + trigger_noise
+
+    # Clamp to valid range and convert back to uint8
+    poisoned_image = np.clip(poisoned_image, 0, 1)
+    poisoned_image = (poisoned_image * 255).astype(np.uint8)
+
+    return poisoned_image
+
+
+class FrequencyBackdoor:
+    """
+    Semantic-aware frequency backdoor attack.
+
+    Dynamically generates triggers based on image content (edges) and
+    client-specific frequency patterns for defense evasion.
+    """
+
+    def __init__(self, client_id, target_label=0, epsilon=0.1, freq_strategy='DISPERSED'):
+        """
+        Initialize backdoor attack.
+
+        Args:
+            client_id: int, unique client identifier
+            target_label: int, target class for misclassification
+            epsilon: float, trigger injection strength
+            freq_strategy: str, 'FIXED' or 'DISPERSED'
+        """
+        self.client_id = client_id
+        self.target_label = target_label
+        self.epsilon = epsilon
+        self.freq_strategy = freq_strategy
+
+    def __call__(self, image, label):
+        """
+        Apply backdoor to a single image.
+
+        Args:
+            image: numpy array [H, W, C], uint8, range [0, 255]
+            label: int, original label
+
+        Returns:
+            poisoned_image: numpy array [H, W, C], uint8
+            poisoned_label: int (target_label)
+        """
+        # Only poison non-target samples
+        if label == self.target_label:
+            return image, label
+
+        # Step 1: Extract soft edge mask (spatial constraint)
+        edge_mask = soft_edge_extraction(image)
+
+        # Step 2: Get client-specific frequency pattern
+        freq_u, freq_v = get_frequency_pattern(
+            self.client_id,
+            img_size=image.shape[:2],
+            strategy=self.freq_strategy
+        )
+
+        # Step 3: Inject frequency trigger
+        poisoned_image = inject_frequency_trigger(
+            image, edge_mask, freq_u, freq_v, self.epsilon
+        )
+
+        return poisoned_image, self.target_label
+
+    def poison_batch(self, images, labels):
+        """
+        Apply backdoor to a batch of images.
+
+        Args:
+            images: numpy array [B, H, W, C], uint8
+            labels: numpy array [B], int
+
+        Returns:
+            poisoned_images: numpy array [B, H, W, C], uint8
+            poisoned_labels: numpy array [B], int
+        """
+        poisoned_images = []
+        poisoned_labels = []
+
+        for img, lbl in zip(images, labels):
+            poisoned_img, poisoned_lbl = self(img, lbl)
+            poisoned_images.append(poisoned_img)
+            poisoned_labels.append(poisoned_lbl)
+
+        return np.array(poisoned_images), np.array(poisoned_labels)
+
+
+# Testing and validation functions
+def test_trigger_generation():
+    """Test trigger generation on a dummy image."""
+    print("Testing frequency backdoor trigger generation...")
+
+    # Create dummy image
+    dummy_img = np.random.randint(0, 255, (32, 32, 3), dtype=np.uint8)
+
+    # Test with different clients
+    for client_id in range(4):
+        backdoor = FrequencyBackdoor(
+            client_id=client_id,
+            target_label=0,
+            epsilon=0.15,
+            freq_strategy='DISPERSED'
+        )
+
+        poisoned_img, poisoned_label = backdoor(dummy_img, label=5)
+
+        # Compute difference
+        diff = np.abs(poisoned_img.astype(float) - dummy_img.astype(float))
+        mean_diff = np.mean(diff)
+        max_diff = np.max(diff)
+
+        print(f"Client {client_id}: mean_diff={mean_diff:.2f}, max_diff={max_diff:.2f}")
+
+    print("Trigger generation test completed.")
+
+
+if __name__ == '__main__':
+    test_trigger_generation()
