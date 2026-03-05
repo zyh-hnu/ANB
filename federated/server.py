@@ -1,5 +1,3 @@
---- START OF FILE federated/server.py ---
-
 """
 Federated Learning Server Implementation
 
@@ -14,7 +12,7 @@ import copy
 import numpy as np
 import os
 import pickle
-from core.defenses import cluster_clients, print_defense_results
+from core.defenses import aggregate_with_defense
 
 
 class Server:
@@ -43,6 +41,9 @@ class Server:
         self.defense_method = defense_method
         self.target_label = target_label
 
+        # [P3-2] Foolsgold requires persistent cross-round history
+        self._foolsgold_history = {}
+
         # Track training history
         self.history = {
             'train_loss': [],
@@ -50,11 +51,65 @@ class Server:
             'test_asr': [],
             'test_asr_multi': [],
             'per_client_asr': [],
-            'defense_results': []
+            'defense_results': [],
+            # [P2-2] Defense quantitative metrics per round
+            'defense_recall': [],       # fraction of malicious clients detected
+            'defense_precision': [],    # fraction of flagged clients that are truly malicious
+            'defense_f1': [],           # harmonic mean of precision and recall
+            'defense_bypass_rate': [],  # fraction of malicious clients that slipped through
         }
 
         # Storage for client weights (for analysis)
         self.saved_weights = {}
+
+    @staticmethod
+    def _compute_acceptance_metrics(num_clients, accepted_clients, malicious_indices):
+        """
+        Compute defense metrics from the *actual acceptance decision*.
+
+        This keeps Recall/Precision/F1/Bypass internally consistent:
+        - detected_malicious := clients filtered out by defense
+        - bypassed_malicious := malicious clients still accepted
+        """
+        accepted_set = set(accepted_clients)
+        malicious_set = set(malicious_indices or [])
+        predicted_malicious = set(range(num_clients)) - accepted_set
+
+        n_malicious = len(malicious_set)
+        true_positives = len(predicted_malicious & malicious_set)
+        false_positives = len(predicted_malicious - malicious_set)
+        false_negatives = len(malicious_set - predicted_malicious)
+        true_negatives = num_clients - n_malicious - false_positives
+
+        precision = (
+            true_positives / (true_positives + false_positives)
+            if (true_positives + false_positives) > 0
+            else 0.0
+        )
+        recall = true_positives / n_malicious if n_malicious > 0 else 0.0
+        f1_score = (
+            2 * precision * recall / (precision + recall)
+            if (precision + recall) > 0
+            else 0.0
+        )
+        bypass_rate = (
+            len(malicious_set & accepted_set) / n_malicious
+            if n_malicious > 0
+            else 0.0
+        )
+
+        return {
+            'true_positives': true_positives,
+            'false_positives': false_positives,
+            'false_negatives': false_negatives,
+            'true_negatives': true_negatives,
+            'precision': precision,
+            'recall': recall,
+            'f1_score': f1_score,
+            'detected_malicious': sorted(predicted_malicious),
+            'missed_malicious': sorted(malicious_set - predicted_malicious),
+            'bypass_rate': bypass_rate,
+        }
 
     def aggregate(self, client_weights_list, client_num_samples, malicious_indices=None):
         """
@@ -71,48 +126,66 @@ class Server:
         num_clients = len(client_weights_list)
 
         if self.defense_enabled:
-            # Apply defense: cluster clients and filter suspicious ones
-            print("\n[Defense] Analyzing client models...")
-
+            # [P3-2] Unified defense dispatch (FreqFed / FLTrust / Foolsgold)
+            print(f"\n[Defense] Running '{self.defense_method}' defense...")
+            agg_weights = None
+            defense_record = {'method': self.defense_method, 'accepted_clients': []}
             try:
-                labels, features = cluster_clients(
-                    client_weights_list,
+                global_w = self.global_model.state_dict()
+                agg_weights, accepted_clients, defense_record = aggregate_with_defense(
                     method=self.defense_method,
-                    n_clusters=2,
-                    freq_band='low-mid',
-                    compression_ratio=0.2
+                    client_weights_list=client_weights_list,
+                    client_num_samples=client_num_samples,
+                    global_weights=global_w,
+                    malicious_indices=malicious_indices,
+                    # FLTrust: use global model as root approximation (no dedicated root set)
+                    root_weights=global_w,
+                    # Foolsgold: pass persistent history dict
+                    history_contributions=self._foolsgold_history,
                 )
 
-                # Print defense results
-                print_defense_results(labels, malicious_indices)
-
-                # Identify benign cluster (largest cluster with label >= 0)
-                unique_labels, counts = np.unique(labels, return_counts=True)
-                valid_labels = unique_labels[unique_labels >= 0]
-
-                if len(valid_labels) > 0:
-                    valid_counts = counts[unique_labels >= 0]
-                    benign_label = valid_labels[np.argmax(valid_counts)]
-
-                    # Only aggregate clients in benign cluster
-                    accepted_clients = [i for i in range(num_clients) if labels[i] == benign_label]
-                else:
-                    # All clients labeled as noise, use all (defense failed)
-                    print("[Defense] Warning: All clients labeled as noise, using all updates")
-                    accepted_clients = list(range(num_clients))
             except Exception as e:
-                print(f"[Defense] Error during clustering: {e}")
-                print("[Defense] Fallback: Accepting all clients")
+                print(f"[Defense] Error: {e}")
+                print("[Defense] Fallback: accepting all clients (no filtering)")
                 accepted_clients = list(range(num_clients))
+                defense_record = {
+                    'method': self.defense_method,
+                    'error': str(e),
+                    'fallback': 'accept_all_on_error',
+                    'accepted_clients': accepted_clients,
+                }
 
-            print(f"[Defense] Accepting updates from {len(accepted_clients)}/{num_clients} clients")
+            # [Consistency Fix] Always compute metrics from *accepted_clients*.
+            if malicious_indices is not None:
+                acceptance_metrics = self._compute_acceptance_metrics(
+                    num_clients=num_clients,
+                    accepted_clients=accepted_clients,
+                    malicious_indices=malicious_indices,
+                )
+                defense_record.update(acceptance_metrics)
 
-            # Store defense results if clustering succeeded
-            if 'labels' in locals():
-                self.history['defense_results'].append({
-                    'labels': labels.tolist(),
-                    'accepted_clients': accepted_clients
-                })
+                self.history['defense_recall'].append(acceptance_metrics['recall'])
+                self.history['defense_precision'].append(acceptance_metrics['precision'])
+                self.history['defense_f1'].append(acceptance_metrics['f1_score'])
+                self.history['defense_bypass_rate'].append(acceptance_metrics['bypass_rate'])
+
+                print(f"[Defense] Recall={acceptance_metrics['recall']:.2%}  "
+                      f"Precision={acceptance_metrics['precision']:.2%}  "
+                      f"F1={acceptance_metrics['f1_score']:.2%}  "
+                      f"Bypass={acceptance_metrics['bypass_rate']:.2%}")
+
+            self.history['defense_results'].append(defense_record)
+
+            # If defense returned pre-aggregated weights (FLTrust / Foolsgold),
+            # load them directly and return — skip vanilla FedAvg below.
+            if agg_weights is not None:
+                self.global_model.load_state_dict(agg_weights)
+                print(f"[Defense] '{self.defense_method}' aggregation applied to "
+                      f"{num_clients} clients.")
+                return accepted_clients
+
+            print(f"[Defense] Accepting updates from "
+                  f"{len(accepted_clients)}/{num_clients} clients")
 
         else:
             # No defense: use all clients
@@ -125,32 +198,35 @@ class Server:
 
         # Calculate weighted average
         total_samples = sum([client_num_samples[i] for i in accepted_clients])
-        
-        # Use the first client's weights as a template
-        template_weights = client_weights_list[0]
+
+        # [P1-3 FIX] Use the first *accepted* client as dtype/shape template.
+        # Previously this was hardcoded to client_weights_list[0], which could be
+        # a client excluded by the defense (not in accepted_clients), causing the
+        # dtype reference to be mismatched from the actual aggregation participants.
+        template_weights = client_weights_list[accepted_clients[0]]
         aggregated_weights = {}
 
-        # === FIX: Initialize accumulator with Float32 to avoid LongTensor casting errors ===
+        # Initialize accumulator with Float32 to avoid LongTensor casting errors
         for key in template_weights.keys():
             aggregated_weights[key] = torch.zeros_like(template_weights[key], dtype=torch.float32)
 
-        # Weighted sum
+        # Weighted sum over accepted clients only
         for i in accepted_clients:
             weight = client_num_samples[i] / total_samples
             for key in aggregated_weights.keys():
                 # Accumulate in float precision
-                aggregated_weights[key] += weight * client_weights_list[i][key]
+                aggregated_weights[key] += weight * client_weights_list[i][key].float()
 
-        # === FIX: Cast back to original types (e.g. Long for num_batches_tracked) ===
+        # Cast back to original types (e.g. Long for num_batches_tracked)
         final_weights = {}
         for key in template_weights.keys():
             target_type = template_weights[key].dtype
             if aggregated_weights[key].dtype != target_type:
                 # Round integers to nearest value to avoid precision drift
                 if target_type in [torch.int64, torch.int32, torch.uint8]:
-                     final_weights[key] = torch.round(aggregated_weights[key]).to(target_type)
+                    final_weights[key] = torch.round(aggregated_weights[key]).to(target_type)
                 else:
-                     final_weights[key] = aggregated_weights[key].to(target_type)
+                    final_weights[key] = aggregated_weights[key].to(target_type)
             else:
                 final_weights[key] = aggregated_weights[key]
 
@@ -326,7 +402,7 @@ class Server:
         self.saved_weights[round_num] = weights_data
 
     def print_round_summary(self, round_num, train_loss, test_acc, test_asr,
-                           test_asr_multi=None, per_client_asr=None):
+                           test_asr_multi=None, per_client_asr=None, defense_metrics=None):
         """
         Print summary of current round.
 
@@ -337,6 +413,7 @@ class Server:
             test_asr: float
             test_asr_multi: float, ASR on multi-trigger test set
             per_client_asr: dict, {client_id: asr}
+            defense_metrics: dict, {recall, precision, f1_score, bypass_rate} or None
         """
         print(f"\n{'='*60}")
         print(f"Round {round_num} Summary")
@@ -352,6 +429,16 @@ class Server:
             print(f"\nPer-Client ASR:")
             for client_id, asr in sorted(per_client_asr.items()):
                 print(f"  Client {client_id}: {asr:.2%}")
+
+        # [P2-2] Print defense metrics if available
+        if defense_metrics is not None:
+            print(f"\nDefense Metrics:")
+            print(f"  Recall    (detected/malicious): {defense_metrics.get('recall', 0):.2%}")
+            print(f"  Precision (true/flagged):       {defense_metrics.get('precision', 0):.2%}")
+            print(f"  F1 Score:                       {defense_metrics.get('f1_score', 0):.2%}")
+            print(f"  Bypass Rate (evaded/malicious): {defense_metrics.get('bypass_rate', 0):.2%}")
+            if defense_metrics.get('bypass_rate', 0) > 0.5:
+                print(f"  *** DEFENSE BYPASSED this round ***")
 
         print(f"{'='*60}\n")
 
@@ -487,9 +574,12 @@ def federated_training(server, clients, test_loader, poisoned_test_loader,
         if per_client_loaders is not None:
             per_client_asr = server.evaluate_per_client_asr(per_client_loaders)
 
-        # Print summary
+        # Print summary — include defense metrics from this round if available
+        defense_metrics = (server.history['defense_results'][-1]
+                           if server.defense_enabled and server.history['defense_results']
+                           else None)
         server.print_round_summary(round_num, avg_train_loss, test_acc, test_asr,
-                                  test_asr_multi, per_client_asr)
+                                  test_asr_multi, per_client_asr, defense_metrics)
 
         # Early stopping if ASR is high enough (for efficiency)
         if test_asr > 0.95 and not server.defense_enabled:

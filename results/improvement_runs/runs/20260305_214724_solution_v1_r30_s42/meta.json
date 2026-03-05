@@ -1,0 +1,38 @@
+{
+  "run_id": "20260305_214724_solution_v1_r30_s42",
+  "started_at": "2026-03-05T21:47:24",
+  "experiment": {
+    "name": "solution_v1_r30_s42",
+    "group": "solution_v1",
+    "condition": "anb_freqfed",
+    "num_rounds": 30,
+    "poison_rate": 0.75,
+    "scaling_factor": 5.5,
+    "local_epochs": 3,
+    "learning_rate": 0.01,
+    "backdoor_boost_weight": 0.3,
+    "seed": 42
+  },
+  "commands": {
+    "modal_run": "modal run modal_train.py::run_single --condition anb_freqfed --num-rounds 30 --poison-rate 0.75 --scaling-factor 5.5 --local-epochs 3 --learning-rate 0.01 --backdoor-boost-weight 0.3 --seed 42",
+    "modal_get": "modal volume get safb-results /results/anb_freqfed D:\\1研\\毕业论文\\SAFB\\results\\improvement_runs\\_pull_cache\\20260305_214724_solution_v1_r30_s42"
+  },
+  "paths": {
+    "run_dir": "D:\\1研\\毕业论文\\SAFB\\results\\improvement_runs\\runs\\20260305_214724_solution_v1_r30_s42",
+    "run_log": "D:\\1研\\毕业论文\\SAFB\\results\\improvement_runs\\runs\\20260305_214724_solution_v1_r30_s42\\run.log",
+    "meta": "D:\\1研\\毕业论文\\SAFB\\results\\improvement_runs\\runs\\20260305_214724_solution_v1_r30_s42\\meta.json",
+    "pull_dir": "D:\\1研\\毕业论文\\SAFB\\results\\improvement_runs\\_pull_cache\\20260305_214724_solution_v1_r30_s42",
+    "artifacts": "D:\\1研\\毕业论文\\SAFB\\results\\improvement_runs\\runs\\20260305_214724_solution_v1_r30_s42\\artifacts"
+  },
+  "status": "run_failed",
+  "metrics": {
+    "bypass_final": 1.0,
+    "recall_final": 0.0,
+    "precision_final": 0.0,
+    "f1_final": 0.0
+  },
+  "run_exit_code": 1,
+  "metrics_source": "run_log",
+  "ended_at": "2026-03-05T23:47:52",
+  "duration_sec": 7228.24
+}

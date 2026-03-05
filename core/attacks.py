@@ -12,8 +12,10 @@ Educational Purpose: Advanced signals processing for adversarial ML research.
 import cv2
 import numpy as np
 import torch
+from core.registry import ATTACKS
 
 
+@ATTACKS.register("anb")
 class AdaptiveNebulaBackdoor:
     """
     Stateful backdoor generator that adapts strategy dynamically.
@@ -23,7 +25,9 @@ class AdaptiveNebulaBackdoor:
     Supports 'FIXED' strategy for baseline comparison (FIBA-like).
     """
 
-    def __init__(self, client_id, target_label=0, epsilon=0.1, max_rounds=50, strategy='ANB'):
+    def __init__(self, client_id, target_label=0, epsilon=0.1, max_rounds=50, strategy='ANB',
+                 use_phased_chaos=True, use_spectral_smoothing=True,
+                 use_freq_sharding=True, use_dual_routing=True):
         """
         Args:
             client_id: int, client identifier
@@ -31,6 +35,10 @@ class AdaptiveNebulaBackdoor:
             epsilon: float, injection strength
             max_rounds: int, total training rounds
             strategy: str, 'ANB' (Dynamic/Ours) or 'FIXED' (Baseline/Static)
+            use_phased_chaos: bool, [P2-1 ablation] enable 3-stage phase scheduling
+            use_spectral_smoothing: bool, [P2-1 ablation] enable Gaussian nebula diffusion
+            use_freq_sharding: bool, [P2-1 ablation] enable per-client freq sharding
+            use_dual_routing: bool, [P2-1 ablation] enable spatial/freq dual-domain routing
         """
         self.client_id = client_id
         self.target_label = target_label
@@ -38,6 +46,18 @@ class AdaptiveNebulaBackdoor:
         self.max_rounds = max_rounds
         self.strategy = strategy
         self.current_round = 0  # Updated by training loop
+
+        # [P2-4] Per-instance deterministic RNG for phase selection.
+        # Seeded by (client_id, round) so the same (client, round) pair always
+        # produces the same phase, regardless of global numpy RNG state.
+        # This fixes non-reproducible ASR measurements across runs and epochs.
+        self._phase_rng = np.random.RandomState(seed=client_id * 1000)
+
+        # [P2-1] Ablation switches
+        self.use_phased_chaos = use_phased_chaos
+        self.use_spectral_smoothing = use_spectral_smoothing
+        self.use_freq_sharding = use_freq_sharding
+        self.use_dual_routing = use_dual_routing
 
         # ------------------------------------------------------------
         # Feature 3: Frequency Sharding Pool (Optimized Primes)
@@ -61,8 +81,17 @@ class AdaptiveNebulaBackdoor:
         self.phase_pool_secondary = [np.pi/4, 3*np.pi/4, 5*np.pi/4, 7*np.pi/4]
 
     def set_round(self, round_num):
-        """Called by Client.train() to update strategy state."""
+        """Called by Client.train() to update strategy state.
+
+        [P2-4] Re-seeds the private phase RNG with (client_id, round_num) so
+        that _get_current_phase() returns the same value for every call within
+        the same round, making ASR measurements fully reproducible.
+        """
         self.current_round = round_num
+        # Deterministic seed: different clients AND different rounds get unique seeds
+        self._phase_rng = np.random.RandomState(
+            seed=(self.client_id * 1000 + round_num) % (2**31)
+        )
 
     # ----------------------------------------------------------------
     # Feature 1: Phased Dynamic Chaos Controller
@@ -71,30 +100,29 @@ class AdaptiveNebulaBackdoor:
         """
         Dynamically schedule phase strategy based on learning stage.
         Idea: Stability early for learning -> Chaos late for stealth.
+        Ablation: use_phased_chaos=False falls back to static phase 0.
         """
-        # BASELINE: FIXED strategy uses static phase
-        if self.strategy == 'FIXED':
+        # BASELINE: FIXED strategy or ablation disabled → static phase
+        if self.strategy == 'FIXED' or not self.use_phased_chaos:
             return 0.0
 
         # ANB: Dynamic Scheduling
-        # STAGE 1: Stabilization (Rounds 0-15)
-        # Use a DETERMINISTIC phase per client.
+        # STAGE 1: Stabilization (Rounds 0-15) — deterministic per client
         if self.current_round < 15:
             idx = self.client_id % 4
             return self.phase_pool_primary[idx]
 
-        # STAGE 2: Expansion (Rounds 15-35)
-        # Randomly choose from Primary phases.
+        # STAGE 2: Expansion (Rounds 15-35) — random from primary phases
+        # [P2-4] Use private RNG seeded by (client_id, round) for reproducibility
         elif self.current_round < 35:
-            idx = np.random.randint(0, 4)
+            idx = self._phase_rng.randint(0, 4)
             return self.phase_pool_primary[idx]
 
-        # STAGE 3: Maximum Chaos (Rounds 35+)
-        # Randomly choose from ALL 8 phases (Primary + Secondary).
-        # Phase Rolling is fully active here.
+        # STAGE 3: Maximum Chaos (Rounds 35+) — all 8 phases
+        # [P2-4] Same: private RNG guarantees same phase per (client, round) pair
         else:
             all_phases = self.phase_pool_primary + self.phase_pool_secondary
-            idx = np.random.randint(0, 8)
+            idx = self._phase_rng.randint(0, 8)
             return all_phases[idx]
 
     def _get_adaptive_sigma(self):
@@ -102,9 +130,10 @@ class AdaptiveNebulaBackdoor:
         Adaptive diffusion sigma.
         Early: 0.8 (Sharp, Star-like) -> High Signal Strength
         Late: 1.5 (Blurry, Nebula-like) -> High Stealth
+        Ablation: use_spectral_smoothing=False keeps sigma fixed at 0.8 (Star mode).
         """
-        # BASELINE: FIXED strategy uses sharp trigger always
-        if self.strategy == 'FIXED':
+        # BASELINE or ablation disabled → always sharp (no smoothing)
+        if self.strategy == 'FIXED' or not self.use_spectral_smoothing:
             return 0.8
 
         # ANB: Adaptive Smoothing
@@ -198,13 +227,13 @@ class AdaptiveNebulaBackdoor:
         Calculates adaptive masks based on Local Complexity (Variance).
         High Complexity -> Frequency Injection
         Low Complexity  -> Spatial Injection
+        Ablation: use_dual_routing=False returns uniform freq mask (no content-adaptive routing).
         """
-        # BASELINE: FIXED strategy does not use adaptive routing
-        # It injects pure frequency trigger (global)
-        if self.strategy == 'FIXED':
+        # BASELINE or ablation disabled → uniform frequency mask, no spatial routing
+        if self.strategy == 'FIXED' or not self.use_dual_routing:
             return np.ones(image.shape[:2], dtype=np.float32), np.zeros(image.shape[:2], dtype=np.float32)
 
-        # ANB: Adaptive Routing
+        # ANB: Adaptive Routing based on local variance
         if len(image.shape) == 3:
             gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         else:
@@ -221,14 +250,11 @@ class AdaptiveNebulaBackdoor:
         max_var = np.max(variance) + 1e-6
         complexity_map = np.clip(variance / max_var, 0, 1)
 
-        # Routing Logic
-        # Freq Mask: Enhance in textured areas (Masking Effect)
+        # Freq Mask: enhance in textured areas
         freq_mask = np.power(complexity_map, 0.4)
 
-        # Spatial Mask: Only for truly flat areas
-        # Invert complexity: 1=Flat, 0=Texture
+        # Spatial Mask: only for truly flat areas
         spatial_base = 1.0 - complexity_map
-        # Sharpen curve: 0.8^3 = 0.5 -> Only allow high values pass
         spatial_mask = np.power(spatial_base, 3.0)
 
         return freq_mask, spatial_mask
@@ -249,27 +275,28 @@ class AdaptiveNebulaBackdoor:
         spatial_routing_3d = np.stack([spatial_routing]*C, axis=2)
 
         # 2. Frequency Branch (The Nebula)
-        # Select Shard
-        if self.strategy == 'FIXED':
-            # Baseline: All clients use SAME frequency (e.g., shard 0)
+        # Feature 3: Frequency Sharding — ablation: use_freq_sharding=False forces shard 0
+        if self.strategy == 'FIXED' or not self.use_freq_sharding:
+            # Baseline / ablation: all clients use the same frequency shard
             center_u, center_v = self.freq_shards[0]
         else:
-            # ANB: Dispersed/Sharded frequencies based on client_id
+            # ANB: dispersed shards based on client_id
             center_u, center_v = self.freq_shards[self.client_id % len(self.freq_shards)]
             
         nebula = self._generate_normalized_nebula_pattern(H, W, center_u, center_v)
         nebula_3d = np.stack([nebula]*C, axis=2)
 
         # Inject Freq
-        # ANB boosts epsilon (1.5x) in textured areas; FIXED uses base epsilon everywhere
-        if self.strategy == 'FIXED':
+        # Feature 4 (dual routing): ANB boosts in textured areas; FIXED/ablation uses uniform mask
+        if self.strategy == 'FIXED' or not self.use_dual_routing:
             freq_inject = nebula_3d * self.base_epsilon
         else:
             freq_inject = nebula_3d * freq_routing_3d * self.base_epsilon * 1.5
 
-        # 3. Spatial Branch (The Ghost Tint) - Only for ANB
+        # 3. Spatial Branch (The Ghost Tint)
+        # Feature 4 (dual routing): only active when dual routing is enabled and strategy=ANB
         spatial_inject = 0.0
-        if self.strategy == 'ANB':
+        if self.strategy == 'ANB' and self.use_dual_routing:
             # Strategy: "Grid Tint" - Checkerboard + Channel Bias
             spatial_pat = np.zeros_like(img_float)
             c_idx = self.client_id % 3
@@ -303,14 +330,23 @@ class AdaptiveNebulaBackdoor:
 # --------------------------------------------------------
 # Backward Compatibility Layer
 # --------------------------------------------------------
+@ATTACKS.register("frequency")
 class FrequencyBackdoor(AdaptiveNebulaBackdoor):
     """
     Compatibility wrapper to maintain interface with existing codebase.
     Maps old FrequencyBackdoor calls to new AdaptiveNebulaBackdoor.
     """
-    def __init__(self, client_id, target_label=0, epsilon=0.1, freq_strategy='ANB'):
-        # Pass freq_strategy ('FIXED' or 'ANB') to the parent class
-        super().__init__(client_id, target_label, epsilon, max_rounds=50, strategy=freq_strategy)
+    def __init__(self, client_id, target_label=0, epsilon=0.1, freq_strategy='ANB',
+                 use_phased_chaos=True, use_spectral_smoothing=True,
+                 use_freq_sharding=True, use_dual_routing=True):
+        # Pass freq_strategy and ablation flags to parent
+        super().__init__(
+            client_id, target_label, epsilon, max_rounds=50, strategy=freq_strategy,
+            use_phased_chaos=use_phased_chaos,
+            use_spectral_smoothing=use_spectral_smoothing,
+            use_freq_sharding=use_freq_sharding,
+            use_dual_routing=use_dual_routing
+        )
 
 
 # --------------------------------------------------------

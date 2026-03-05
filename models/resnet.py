@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from core.registry import MODELS
 
 
 class BasicBlock(nn.Module):
@@ -65,5 +66,6 @@ class ResNet(nn.Module):
         return out
 
 
+@MODELS.register("resnet18")
 def ResNet18(num_classes=10):
     return ResNet(BasicBlock, [2, 2, 2, 2], num_classes=num_classes)

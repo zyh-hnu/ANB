@@ -1,0 +1,68 @@
+✓ Initialized. View run at 
+https://modal.com/apps/zhouyonghao90/main/ap-ZJVC78dOKnyLugvWQVVlWa
+✓ Created objects.
+├── 🔨 Created mount D:\1研\毕业论文\SAFB\modal_train.py
+├── 🔨 Created mount D:\1研\毕业论文\SAFB
+├── 🔨 Created function train_condition.
+├── 🔨 Created function run_sensitivity_sweep.
+├── 🔨 Created function run_cifar100.
+└── 🔨 Created function generate_summary_table.
+
+[Modal] Smoke test: anb_freqfed, 30 rounds
+[Modal] Params: poison_rate=0.75, scaling_factor=5.5, local_epochs=3, lr=0.01, seed=123, boost_weight=0.3
+
+=================================================================
+[Modal] Condition : ANB + FreqFed
+[Modal] GPU       : Tesla T4
+=================================================================
+
+
+======================================================================
+EXPERIMENT CONFIGURATION
+======================================================================
+Attack Mode: OURS
+Frequency Strategy: ANB (Check: ANB enables Spatial Tint)
+Defense Enabled: True (hdbscan)
+Dataset: CIFAR10, Clients: 10, Poison Ratio: 20%
+Target Label: 0, Epsilon: 0.1, Poison Rate: 0.75
+Training: 30 Rounds, Local Epochs: 3, LR: 0.01
+Attack Scaling Factor: 5.50
+======================================================================
+
+Files already downloaded and verified
+Files already downloaded and verified
+Created 10 clients:
+  - Malicious clients: [0, 1]
+  - Benign clients: [2, 3, 4, 5, 6, 7, 8, 9]
+  - Malicious poison rate: 0.75
+  - Malicious scaling factor: 5.50
+
+Starting Federated Learning
+  Total clients: 10
+  Clients per round: 10
+  Total rounds: 30
+  Defense enabled: True
+  Defense method: hdbscan
+  Save weights at rounds: [15, 30]
+
+
+============================================================
+Round 1/30
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 3/3, Loss: 0.9279
+  [Malicious Client 0] Applied scaling factor: 5.5
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 3/3, Loss: 0.9460
+  [Malicious Client 1] Applied scaling factor: 5.5
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...

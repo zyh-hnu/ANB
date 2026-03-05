@@ -1,0 +1,737 @@
+✓ Initialized. View run at 
+https://modal.com/apps/zhouyonghao90/main/ap-kOPehy6eLzSqov0w3fG034
+✓ Created objects.
+├── 🔨 Created mount D:\1研\毕业论文\SAFB\modal_train.py
+├── 🔨 Created mount D:\1研\毕业论文\SAFB
+├── 🔨 Created function train_condition.
+├── 🔨 Created function run_sensitivity_sweep.
+├── 🔨 Created function run_cifar100.
+└── 🔨 Created function generate_summary_table.
+
+[Modal] Smoke test: anb_freqfed, 10 rounds
+[Modal] Params: poison_rate=0.8, scaling_factor=4.5, local_epochs=5, lr=0.01, seed=42
+
+=================================================================
+[Modal] Condition : ANB + FreqFed
+[Modal] GPU       : Tesla T4
+=================================================================
+
+
+======================================================================
+EXPERIMENT CONFIGURATION
+======================================================================
+Attack Mode: OURS
+Frequency Strategy: ANB (Check: ANB enables Spatial Tint)
+Defense Enabled: True (hdbscan)
+Dataset: CIFAR10, Clients: 10, Poison Ratio: 20%
+Target Label: 0, Epsilon: 0.1, Poison Rate: 0.80
+Training: 10 Rounds, Local Epochs: 5, LR: 0.01
+Attack Scaling Factor: 4.50
+======================================================================
+
+Files already downloaded and verified
+Files already downloaded and verified
+Created 10 clients:
+  - Malicious clients: [0, 1]
+  - Benign clients: [2, 3, 4, 5, 6, 7, 8, 9]
+  - Malicious poison rate: 0.80
+  - Malicious scaling factor: 4.50
+
+Starting Federated Learning
+  Total clients: 10
+  Clients per round: 10
+  Total rounds: 10
+  Defense enabled: True
+  Defense method: hdbscan
+  Save weights at rounds: [5, 10]
+
+
+============================================================
+Round 1/10
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.7581
+  [Malicious Client 0] Applied scaling factor: 4.5
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.7130
+  [Malicious Client 1] Applied scaling factor: 4.5
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Running 'hdbscan' defense...
+[Defense] Recall=0.00%  Precision=0.00%  F1=0.00%  Bypass=100.00%
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 1 Summary
+============================================================
+Train Loss: 1.0421
+Test Accuracy (Clean): 10.00%
+Attack Success Rate (Single Trigger): 100.00%
+Attack Success Rate (Multi-Trigger): 100.00%
+
+Per-Client ASR:
+  Client 0: 100.00%
+  Client 1: 100.00%
+
+Defense Metrics:
+  Recall    (detected/malicious): 0.00%
+  Precision (true/flagged):       0.00%
+  F1 Score:                       0.00%
+  Bypass Rate (evaded/malicious): 100.00%
+  *** DEFENSE BYPASSED this round ***
+============================================================
+
+
+============================================================
+Round 2/10
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.7398
+  [Malicious Client 0] Applied scaling factor: 4.5
+
+Training client 1 (MALICIOUS)...
+[modal-client] 2026-03-04T22:45:42+0800 Loop attempt for _run_app.<locals>.heartbeat failed
+Traceback (most recent call last):
+  File "D:\python3.12\Lib\site-packages\grpclib\client.py", line 369, in recv_initial_metadata
+    headers = await self._stream.recv_headers()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\python3.12\Lib\site-packages\grpclib\protocol.py", line 342, in recv_headers
+    await self.headers_received.wait()
+  File "D:\python3.12\Lib\asyncio\locks.py", line 212, in wait
+    await fut
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\python3.12\Lib\site-packages\modal\_grpc_client.py", line 158, in direct
+    return await self.client._call_unary(self.wrapped_method, req, timeout=timeout, metadata=metadata)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\python3.12\Lib\site-packages\modal\client.py", line 338, in _call_unary
+    return await self._call_safely(coro, grpclib_method.name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\python3.12\Lib\site-packages\modal\client.py", line 298, in _call_safely
+    return await request_task
+           ^^^^^^^^^^^^^^^^^^
+  File "D:\python3.12\Lib\site-packages\grpclib\client.py", line 913, in __call__
+    reply = await stream.recv_message()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\python3.12\Lib\site-packages\grpclib\client.py", line 426, in recv_message
+    await self.recv_initial_metadata()
+  File "D:\python3.12\Lib\site-packages\grpclib\client.py", line 368, in recv_initial_metadata
+    with self._wrapper:
+  File "D:\python3.12\Lib\site-packages\grpclib\utils.py", line 70, in __exit__
+    raise self._error
+TimeoutError: Deadline exceeded
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\python3.12\Lib\site-packages\modal\_utils\async_utils.py", line 537, in loop_coro
+    await asyncio.wait_for(async_f(), timeout=timeout)
+  File "D:\python3.12\Lib\asyncio\tasks.py", line 510, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "D:\python3.12\Lib\site-packages\modal\runner.py", line 56, in _heartbeat
+    await client.stub.AppHeartbeat(request, retry=Retry(attempt_timeout=HEARTBEAT_TIMEOUT))
+modal.exception.ConnectionError: Deadline exceeded
+  [Malicious Client 1] Epoch 5/5, Loss: 0.7002
+  [Malicious Client 1] Applied scaling factor: 4.5
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Running 'hdbscan' defense...
+[Defense] Recall=0.00%  Precision=0.00%  F1=0.00%  Bypass=100.00%
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 2 Summary
+============================================================
+Train Loss: 0.9799
+Test Accuracy (Clean): 10.00%
+Attack Success Rate (Single Trigger): 100.00%
+Attack Success Rate (Multi-Trigger): 100.00%
+
+Per-Client ASR:
+  Client 0: 100.00%
+  Client 1: 100.00%
+
+Defense Metrics:
+  Recall    (detected/malicious): 0.00%
+  Precision (true/flagged):       0.00%
+  F1 Score:                       0.00%
+  Bypass Rate (evaded/malicious): 100.00%
+  *** DEFENSE BYPASSED this round ***
+============================================================
+
+
+============================================================
+Round 3/10
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.7146
+  [Malicious Client 0] Applied scaling factor: 4.5
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.6524
+  [Malicious Client 1] Applied scaling factor: 4.5
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Running 'hdbscan' defense...
+[Defense] Recall=0.00%  Precision=0.00%  F1=0.00%  Bypass=100.00%
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 3 Summary
+============================================================
+Train Loss: 0.8110
+Test Accuracy (Clean): 10.00%
+Attack Success Rate (Single Trigger): 100.00%
+Attack Success Rate (Multi-Trigger): 100.00%
+
+Per-Client ASR:
+  Client 0: 100.00%
+  Client 1: 100.00%
+
+Defense Metrics:
+  Recall    (detected/malicious): 0.00%
+  Precision (true/flagged):       0.00%
+  F1 Score:                       0.00%
+  Bypass Rate (evaded/malicious): 100.00%
+  *** DEFENSE BYPASSED this round ***
+============================================================
+
+
+============================================================
+Round 4/10
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.6503
+  [Malicious Client 0] Applied scaling factor: 4.5
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.6432
+  [Malicious Client 1] Applied scaling factor: 4.5
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Running 'hdbscan' defense...
+[Defense] Recall=0.00%  Precision=0.00%  F1=0.00%  Bypass=100.00%
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 4 Summary
+============================================================
+Train Loss: 0.6889
+Test Accuracy (Clean): 10.00%
+Attack Success Rate (Single Trigger): 100.00%
+Attack Success Rate (Multi-Trigger): 100.00%
+
+Per-Client ASR:
+  Client 0: 100.00%
+  Client 1: 100.00%
+
+Defense Metrics:
+  Recall    (detected/malicious): 0.00%
+  Precision (true/flagged):       0.00%
+  F1 Score:                       0.00%
+  Bypass Rate (evaded/malicious): 100.00%
+  *** DEFENSE BYPASSED this round ***
+============================================================
+
+
+============================================================
+Round 5/10
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.6728
+  [Malicious Client 0] Applied scaling factor: 4.5
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.5886
+  [Malicious Client 1] Applied scaling factor: 4.5
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+[Server] Client weights saved to ./results/weights/client_weights_round_5.pkl
+
+[Server] Aggregating client models...
+
+[Defense] Running 'hdbscan' defense...
+[Defense] Recall=0.00%  Precision=0.00%  F1=0.00%  Bypass=100.00%
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 5 Summary
+============================================================
+Train Loss: 0.6046
+Test Accuracy (Clean): 10.00%
+Attack Success Rate (Single Trigger): 100.00%
+Attack Success Rate (Multi-Trigger): 100.00%
+
+Per-Client ASR:
+  Client 0: 100.00%
+  Client 1: 100.00%
+
+Defense Metrics:
+  Recall    (detected/malicious): 0.00%
+  Precision (true/flagged):       0.00%
+  F1 Score:                       0.00%
+  Bypass Rate (evaded/malicious): 100.00%
+  *** DEFENSE BYPASSED this round ***
+============================================================
+
+
+============================================================
+Round 6/10
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.6426
+  [Malicious Client 0] Applied scaling factor: 4.5
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.5794
+  [Malicious Client 1] Applied scaling factor: 4.5
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Running 'hdbscan' defense...
+[Defense] Recall=0.00%  Precision=0.00%  F1=0.00%  Bypass=100.00%
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 6 Summary
+============================================================
+Train Loss: 0.5403
+Test Accuracy (Clean): 10.00%
+Attack Success Rate (Single Trigger): 100.00%
+Attack Success Rate (Multi-Trigger): 100.00%
+
+Per-Client ASR:
+  Client 0: 100.00%
+  Client 1: 100.00%
+
+Defense Metrics:
+  Recall    (detected/malicious): 0.00%
+  Precision (true/flagged):       0.00%
+  F1 Score:                       0.00%
+  Bypass Rate (evaded/malicious): 100.00%
+  *** DEFENSE BYPASSED this round ***
+============================================================
+
+
+============================================================
+Round 7/10
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.6090
+  [Malicious Client 0] Applied scaling factor: 4.5
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.5771
+  [Malicious Client 1] Applied scaling factor: 4.5
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Running 'hdbscan' defense...
+[Defense] Recall=0.00%  Precision=0.00%  F1=0.00%  Bypass=100.00%
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 7 Summary
+============================================================
+Train Loss: 0.4932
+Test Accuracy (Clean): 10.00%
+Attack Success Rate (Single Trigger): 100.00%
+Attack Success Rate (Multi-Trigger): 100.00%
+
+Per-Client ASR:
+  Client 0: 100.00%
+  Client 1: 100.00%
+
+Defense Metrics:
+  Recall    (detected/malicious): 0.00%
+  Precision (true/flagged):       0.00%
+  F1 Score:                       0.00%
+  Bypass Rate (evaded/malicious): 100.00%
+  *** DEFENSE BYPASSED this round ***
+============================================================
+
+
+============================================================
+Round 8/10
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.6051
+  [Malicious Client 0] Applied scaling factor: 4.5
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.5519
+  [Malicious Client 1] Applied scaling factor: 4.5
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Running 'hdbscan' defense...
+[Defense] Recall=0.00%  Precision=0.00%  F1=0.00%  Bypass=100.00%
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 8 Summary
+============================================================
+Train Loss: 0.4508
+Test Accuracy (Clean): 66.64%
+Attack Success Rate (Single Trigger): 15.97%
+Attack Success Rate (Multi-Trigger): 16.11%
+
+Per-Client ASR:
+  Client 0: 15.97%
+  Client 1: 16.58%
+
+Defense Metrics:
+  Recall    (detected/malicious): 0.00%
+  Precision (true/flagged):       0.00%
+  F1 Score:                       0.00%
+  Bypass Rate (evaded/malicious): 100.00%
+  *** DEFENSE BYPASSED this round ***
+============================================================
+
+
+============================================================
+Round 9/10
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.6180
+  [Malicious Client 0] Applied scaling factor: 4.5
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.4402
+  [Malicious Client 1] Applied scaling factor: 4.5
+
+Training client 2 (benign)...
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+
+[Server] Aggregating client models...
+
+[Defense] Running 'hdbscan' defense...
+[Defense] Recall=0.00%  Precision=0.00%  F1=0.00%  Bypass=100.00%
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 9 Summary
+============================================================
+Train Loss: 0.4157
+Test Accuracy (Clean): 65.52%
+Attack Success Rate (Single Trigger): 22.98%
+Attack Success Rate (Multi-Trigger): 23.99%
+
+Per-Client ASR:
+  Client 0: 22.98%
+  Client 1: 24.93%
+
+Defense Metrics:
+  Recall    (detected/malicious): 0.00%
+  Precision (true/flagged):       0.00%
+  F1 Score:                       0.00%
+  Bypass Rate (evaded/malicious): 100.00%
+  *** DEFENSE BYPASSED this round ***
+============================================================
+
+
+============================================================
+Round 10/10
+============================================================
+Selected clients: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Training client 0 (MALICIOUS)...
+  [Malicious Client 0] Epoch 5/5, Loss: 0.5719
+  [Malicious Client 0] Applied scaling factor: 4.5
+
+Training client 1 (MALICIOUS)...
+  [Malicious Client 1] Epoch 5/5, Loss: 0.3902
+  [Malicious Client 1] Applied scaling factor: 4.5
+
+Training client 2 (benign)...
+[modal-client] 2026-03-05T00:03:58+0800 Loop attempt for _run_app.<locals>.heartbeat failed
+Traceback (most recent call last):
+  File "D:\python3.12\Lib\site-packages\grpclib\client.py", line 369, in recv_initial_metadata
+    headers = await self._stream.recv_headers()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\python3.12\Lib\site-packages\grpclib\protocol.py", line 342, in recv_headers
+    await self.headers_received.wait()
+  File "D:\python3.12\Lib\asyncio\locks.py", line 212, in wait
+    await fut
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\python3.12\Lib\site-packages\modal\_utils\async_utils.py", line 537, in loop_coro
+    await asyncio.wait_for(async_f(), timeout=timeout)
+  File "D:\python3.12\Lib\asyncio\tasks.py", line 510, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "D:\python3.12\Lib\site-packages\modal\runner.py", line 56, in _heartbeat
+    await client.stub.AppHeartbeat(request, retry=Retry(attempt_timeout=HEARTBEAT_TIMEOUT))
+  File "D:\python3.12\Lib\site-packages\modal\_grpc_client.py", line 158, in direct
+    return await self.client._call_unary(self.wrapped_method, req, timeout=timeout, metadata=metadata)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\python3.12\Lib\site-packages\modal\client.py", line 338, in _call_unary
+    return await self._call_safely(coro, grpclib_method.name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\python3.12\Lib\site-packages\modal\client.py", line 298, in _call_safely
+    return await request_task
+           ^^^^^^^^^^^^^^^^^^
+  File "D:\python3.12\Lib\site-packages\grpclib\client.py", line 913, in __call__
+    reply = await stream.recv_message()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\python3.12\Lib\site-packages\grpclib\client.py", line 426, in recv_message
+    await self.recv_initial_metadata()
+  File "D:\python3.12\Lib\site-packages\grpclib\client.py", line 368, in recv_initial_metadata
+    with self._wrapper:
+  File "D:\python3.12\Lib\site-packages\grpclib\utils.py", line 70, in __exit__
+    raise self._error
+grpclib.exceptions.StreamTerminatedError: Connection lost
+
+Training client 3 (benign)...
+
+Training client 4 (benign)...
+
+Training client 5 (benign)...
+
+Training client 6 (benign)...
+
+Training client 7 (benign)...
+
+Training client 8 (benign)...
+
+Training client 9 (benign)...
+[Server] Client weights saved to ./results/weights/client_weights_round_10.pkl
+
+[Server] Aggregating client models...
+
+[Defense] Running 'hdbscan' defense...
+[Defense] Recall=0.00%  Precision=0.00%  F1=0.00%  Bypass=100.00%
+[Defense] Accepting updates from 10/10 clients
+
+[Server] Evaluating global model...
+
+============================================================
+Round 10 Summary
+============================================================
+Train Loss: 0.3885
+Test Accuracy (Clean): 70.53%
+Attack Success Rate (Single Trigger): 17.21%
+Attack Success Rate (Multi-Trigger): 19.16%
+
+Per-Client ASR:
+  Client 0: 17.21%
+  Client 1: 20.84%
+
+Defense Metrics:
+  Recall    (detected/malicious): 0.00%
+  Precision (true/flagged):       0.00%
+  F1 Score:                       0.00%
+  Bypass Rate (evaded/malicious): 100.00%
+  *** DEFENSE BYPASSED this round ***
+============================================================
+
+
+============================================================
+Federated Learning Complete
+============================================================
+Final Test Accuracy: 70.53%
+Final ASR (Single Trigger): 17.21%
+Final ASR (Multi-Trigger): 19.16%
+============================================================
+
+
+[Modal] ASR=17.21%  ACC=70.53%
+Model saved to /results/anb_freqfed/model_final.pth
+[Modal] Saved → /results/anb_freqfed/history.json
+[Modal] Saved → /results/anb_freqfed/model_final.pth
+
+[Modal] === RESULT: ANB + FreqFed ===
+  ASR    : 17.21%
+  ACC    : 70.53%
+  Bypass : 100.00%
+Stopping app - local entrypoint completed.
+Runner terminated.
+✓ App completed. View run at 
+https://modal.com/apps/zhouyonghao90/main/ap-kOPehy6eLzSqov0w3fG034

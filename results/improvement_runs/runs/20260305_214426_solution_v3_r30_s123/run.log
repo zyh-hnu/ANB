@@ -1,0 +1,5 @@
+Usage: modal run modal_train.py::run_single [OPTIONS]
+Try 'modal run modal_train.py::run_single -h' for help.
+┌─ Error ─────────────────────────────────────────────────────────────────────┐
+│ No such option: --backdoor-boost-weight                                     │
+└─────────────────────────────────────────────────────────────────────────────┘

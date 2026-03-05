@@ -18,9 +18,11 @@ import json
 import glob
 
 # Import project modules
-from config import *
-from models.resnet import ResNet18
-from data.dataset import BackdoorDataset, PoisonedTestDataset, CleanTestDataset, MultiTriggerTestDataset, get_transforms
+from config import load_config
+from core.registry import ATTACKS, MODELS
+import core.attacks  # register attacks
+import models.resnet  # register models
+from data.dataset import PoisonedTestDataset, CleanTestDataset, MultiTriggerTestDataset, get_transforms
 from data.distribution import dirichlet_split
 from federated.client import create_clients
 from federated.server import Server, federated_training
@@ -61,57 +63,73 @@ def load_dataset(dataset_name='CIFAR10', data_dir='./data'):
 
 
 def create_test_loaders(test_dataset, target_label, epsilon, freq_strategy,
-                        malicious_client_ids, batch_size=128):
+                        malicious_client_ids, batch_size=128, dataset_name='CIFAR10',
+                        backdoor_factory=None, num_workers=0, pin_memory=True):
     """Create test data loaders for evaluation."""
-    test_transform = get_transforms(train=False, dataset=DATASET)
+    test_transform = get_transforms(train=False, dataset=dataset_name)
 
     # Clean test set for accuracy
     clean_test = CleanTestDataset(test_dataset, transform=test_transform)
-    clean_loader = DataLoader(clean_test, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
+    clean_loader = DataLoader(
+        clean_test, batch_size=batch_size, shuffle=False,
+        num_workers=num_workers, pin_memory=pin_memory
+    )
 
     # Single-trigger poisoned test set
     poisoned_test = PoisonedTestDataset(
         test_dataset, target_label=target_label, epsilon=epsilon,
         freq_strategy=freq_strategy, client_id=malicious_client_ids[0] if malicious_client_ids else 0,
-        transform=test_transform
+        transform=test_transform, backdoor_factory=backdoor_factory
     )
-    poisoned_loader = DataLoader(poisoned_test, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
+    poisoned_loader = DataLoader(
+        poisoned_test, batch_size=batch_size, shuffle=False,
+        num_workers=num_workers, pin_memory=pin_memory
+    )
 
     # Multi-trigger test set (comprehensive evaluation)
     multi_trigger_test = MultiTriggerTestDataset(
         test_dataset, malicious_client_ids=malicious_client_ids,
         target_label=target_label, epsilon=epsilon,
-        freq_strategy=freq_strategy, transform=test_transform
+        freq_strategy=freq_strategy, transform=test_transform, backdoor_factory=backdoor_factory
     )
-    multi_trigger_loader = DataLoader(multi_trigger_test, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
+    multi_trigger_loader = DataLoader(
+        multi_trigger_test, batch_size=batch_size, shuffle=False,
+        num_workers=num_workers, pin_memory=pin_memory
+    )
 
     # Per-client test sets
     per_client_loaders = {}
     for client_id in malicious_client_ids:
         client_test = PoisonedTestDataset(
             test_dataset, target_label=target_label, epsilon=epsilon,
-            freq_strategy=freq_strategy, client_id=client_id, transform=test_transform
+            freq_strategy=freq_strategy, client_id=client_id, transform=test_transform,
+            backdoor_factory=backdoor_factory
         )
-        per_client_loaders[client_id] = DataLoader(client_test, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
+        per_client_loaders[client_id] = DataLoader(
+            client_test, batch_size=batch_size, shuffle=False,
+            num_workers=num_workers, pin_memory=pin_memory
+        )
 
     return clean_loader, poisoned_loader, multi_trigger_loader, per_client_loaders
 
 
-def print_experiment_config():
+def print_experiment_config(cfg):
     """Print experiment configuration."""
     print("\n" + "="*70)
     print("EXPERIMENT CONFIGURATION")
     print("="*70)
-    print(f"Attack Mode: {ATTACK_MODE}")
-    print(f"Frequency Strategy: {FREQ_STRATEGY} (Check: ANB enables Spatial Tint)")
-    print(f"Defense Enabled: {DEFENSE_ENABLED} ({DEFENSE_METHOD})")
-    print(f"Dataset: {DATASET}, Clients: {NUM_CLIENTS}, Poison Ratio: {POISON_RATIO:.0%}")
-    print(f"Target Label: {TARGET_LABEL}, Epsilon: {EPSILON}")
-    print(f"Training: {NUM_ROUNDS} Rounds")
+    print(f"Attack Mode: {cfg.attack_mode}")
+    print(f"Frequency Strategy: {cfg.freq_strategy} (Check: ANB enables Spatial Tint)")
+    print(f"Defense Enabled: {cfg.defense_enabled} ({cfg.defense_method})")
+    print(f"Dataset: {cfg.dataset}, Clients: {cfg.num_clients}, Poison Ratio: {cfg.poison_ratio:.0%}")
+    print(f"Target Label: {cfg.target_label}, Epsilon: {cfg.epsilon}, Poison Rate: {cfg.poison_rate:.2f}")
+    print(f"Training: {cfg.num_rounds} Rounds, Local Epochs: {cfg.local_epochs}, LR: {cfg.learning_rate}")
+    print(f"Attack Scaling Factor: {cfg.scaling_factor:.2f}")
     print("="*70 + "\n")
 
 
-def generate_experiment_visualizations(results_dir='./results', weights_dir='./results/weights'):
+def generate_experiment_visualizations(results_dir='./results', weights_dir='./results/weights',
+                                       defense_method='hdbscan', freq_strategy='ANB'):
     """Generate all verification and analysis plots after training."""
     print("\n" + "="*70)
     print("STEP 10: Generating Visualizations")
@@ -146,9 +164,9 @@ def generate_experiment_visualizations(results_dir='./results', weights_dir='./r
             print(f"  Loading real weights from: {latest_weights}")
             
             client_weights, malicious_indices, metadata = load_real_weights(latest_weights)
-            labels, _ = cluster_clients(client_weights, method=DEFENSE_METHOD)
+            labels, _ = cluster_clients(client_weights, method=defense_method)
             
-            title = f"FreqFed Defense Result (Round {metadata.get('round', 'Unknown')}) - {FREQ_STRATEGY}"
+            title = f"FreqFed Defense Result (Round {metadata.get('round', 'Unknown')}) - {freq_strategy}"
             save_path = os.path.join(results_dir, f'clustering_result_real.png')
             
             visualize_cluster_results(client_weights, labels, malicious_indices, title, save_path)
@@ -163,52 +181,91 @@ def generate_experiment_visualizations(results_dir='./results', weights_dir='./r
     print("\n✓ All Visualizations generated in ./results/")
 
 
+def build_backdoor_factory(cfg):
+    attack_cls = ATTACKS.get(cfg.backdoor_name)
+    if attack_cls.__name__ == "AdaptiveNebulaBackdoor":
+        return lambda cid: attack_cls(
+            client_id=cid,
+            target_label=cfg.target_label,
+            epsilon=cfg.epsilon,
+            max_rounds=cfg.num_rounds,
+            strategy=cfg.freq_strategy,
+            # [P2-1] Ablation switches from config
+            use_phased_chaos=cfg.use_phased_chaos,
+            use_spectral_smoothing=cfg.use_spectral_smoothing,
+            use_freq_sharding=cfg.use_freq_sharding,
+            use_dual_routing=cfg.use_dual_routing
+        )
+    return lambda cid: attack_cls(
+        client_id=cid,
+        target_label=cfg.target_label,
+        epsilon=cfg.epsilon,
+        freq_strategy=cfg.freq_strategy,
+        # [P2-1] Ablation switches (FrequencyBackdoor wraps ANB)
+        use_phased_chaos=cfg.use_phased_chaos,
+        use_spectral_smoothing=cfg.use_spectral_smoothing,
+        use_freq_sharding=cfg.use_freq_sharding,
+        use_dual_routing=cfg.use_dual_routing
+    )
+
+
 def main():
     """Main experimental pipeline."""
-    setup_seed(42)
-    print_experiment_config()
+    cfg = load_config()
+    setup_seed(cfg.seed)
+    print_experiment_config(cfg)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Using device: {device}\n")
 
     # ===== Step 1-6: Setup =====
     print("Initializing Data and Clients...")
-    train_dataset, test_dataset, num_classes = load_dataset(DATASET)
-    client_indices = dirichlet_split(train_dataset, num_clients=NUM_CLIENTS, alpha=ALPHA)
-    num_malicious = int(NUM_CLIENTS * POISON_RATIO)
+    train_dataset, test_dataset, num_classes = load_dataset(cfg.dataset, cfg.data_dir)
+    client_indices = dirichlet_split(train_dataset, num_clients=cfg.num_clients, alpha=cfg.alpha)
+    num_malicious = int(cfg.num_clients * cfg.poison_ratio)
     malicious_indices = list(range(num_malicious))
+    backdoor_factory = build_backdoor_factory(cfg)
 
     clients = create_clients(
         dataset=train_dataset,
-        num_clients=NUM_CLIENTS,
+        num_clients=cfg.num_clients,
         malicious_indices=malicious_indices,
         client_indices=client_indices,
-        target_label=TARGET_LABEL,
-        epsilon=EPSILON,
-        freq_strategy=FREQ_STRATEGY,
-        batch_size=BATCH_SIZE,
-        local_epochs=LOCAL_EPOCHS,
-        lr=LEARNING_RATE
+        target_label=cfg.target_label,
+        epsilon=cfg.epsilon,
+        freq_strategy=cfg.freq_strategy,
+        batch_size=cfg.batch_size,
+        local_epochs=cfg.local_epochs,
+        lr=cfg.learning_rate,
+        dataset_name=cfg.dataset,
+        backdoor_factory=backdoor_factory,
+        poison_rate=cfg.poison_rate,
+        scaling_factor=cfg.scaling_factor  # [P1-2] Model replacement scaling
     )
 
-    global_model = ResNet18(num_classes=num_classes)
+    model_builder = MODELS.get(cfg.model_name)
+    global_model = model_builder(num_classes=num_classes)
     
     clean_test_loader, poisoned_test_loader, multi_trigger_loader, per_client_loaders = create_test_loaders(
-        test_dataset, TARGET_LABEL, EPSILON, FREQ_STRATEGY, malicious_indices, BATCH_SIZE
+        test_dataset, cfg.target_label, cfg.epsilon, cfg.freq_strategy,
+        malicious_indices, cfg.batch_size, dataset_name=cfg.dataset,
+        backdoor_factory=backdoor_factory,
+        num_workers=cfg.num_workers,
+        pin_memory=cfg.pin_memory
     )
 
     server = Server(
         model=global_model,
         device=device,
-        defense_enabled=DEFENSE_ENABLED,
-        defense_method=DEFENSE_METHOD,
-        target_label=TARGET_LABEL
+        defense_enabled=cfg.defense_enabled,
+        defense_method=cfg.defense_method,
+        target_label=cfg.target_label
     )
 
     # ===== Step 7: Training =====
     print("Starting Federated Learning...")
     # Save weights at mid and final round for visualization
-    save_rounds = [NUM_ROUNDS // 2, NUM_ROUNDS]
+    save_rounds = [cfg.num_rounds // 2, cfg.num_rounds]
     
     server = federated_training(
         server=server,
@@ -217,9 +274,9 @@ def main():
         poisoned_test_loader=poisoned_test_loader,
         multi_trigger_loader=multi_trigger_loader,
         per_client_loaders=per_client_loaders,
-        num_rounds=NUM_ROUNDS,
+        num_rounds=cfg.num_rounds,
         malicious_indices=malicious_indices,
-        client_fraction=1.0,
+        client_fraction=cfg.client_fraction,
         save_weights_at_rounds=save_rounds
     )
 
@@ -230,16 +287,21 @@ def main():
     print(f"Final Clean ACC: {final_acc:.2%}")
     print(f"Final Attack ASR: {final_asr:.2%}")
 
-    os.makedirs('./results', exist_ok=True)
-    experiment_name = f"{ATTACK_MODE}_{FREQ_STRATEGY}_defense_{DEFENSE_ENABLED}"
-    server.save_model(f"./results/model_{experiment_name}.pth")
+    os.makedirs(cfg.results_dir, exist_ok=True)
+    experiment_name = f"{cfg.attack_mode}_{cfg.freq_strategy}_defense_{cfg.defense_enabled}"
+    server.save_model(os.path.join(cfg.results_dir, f"model_{experiment_name}.pth"))
     
-    with open(f"./results/history_{experiment_name}.json", 'w') as f:
+    with open(os.path.join(cfg.results_dir, f"history_{experiment_name}.json"), 'w') as f:
         json.dump(server.history, f, indent=2)
 
     # ===== Step 9 & 10: Visualization =====
     # Calls the generator to produce all plots based on the trained model/logic
-    generate_experiment_visualizations(results_dir='./results', weights_dir='./results/weights')
+    generate_experiment_visualizations(
+        results_dir=cfg.results_dir,
+        weights_dir=cfg.weights_dir,
+        defense_method=cfg.defense_method,
+        freq_strategy=cfg.freq_strategy
+    )
 
     print("\n" + "="*70)
     print("EXPERIMENT COMPLETE")

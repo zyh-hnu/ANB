@@ -1,0 +1,8 @@
+{
+  "generated_at": "2026-03-04T18:34:10",
+  "constraint": {
+    "min_asr": 0.85,
+    "min_bypass": 0.7
+  },
+  "rows": []
+}

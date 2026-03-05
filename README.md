@@ -1,5 +1,11 @@
 # SAFB Project - Quick Start Guide
 
+## 项目结构与可插拔性
+
+已新增一份中文总结文档，说明结构优化与可插拔机制：
+
+- 参见 `docs/ARCHITECTURE.md`
+
 ## 项目概览
 
 **SAFB (Semantic-Aware Frequency Backdoor)** 是一个针对联邦学习中FreqFed防御机制的后门攻击研究项目。

@@ -10,7 +10,6 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 from PIL import Image
 import numpy as np
-from core.attacks import FrequencyBackdoor
 
 
 class BackdoorDataset(Dataset):
@@ -25,7 +24,7 @@ class BackdoorDataset(Dataset):
 
     def __init__(self, base_dataset, client_id, is_malicious=False,
                  target_label=0, epsilon=0.1, freq_strategy='DISPERSED',
-                 transform=None, poison_rate=1.0):
+                 transform=None, poison_rate=1.0, backdoor_factory=None):
         """
         Initialize backdoor dataset.
 
@@ -50,12 +49,15 @@ class BackdoorDataset(Dataset):
 
         # Initialize backdoor if malicious
         if self.is_malicious:
-            self.backdoor = FrequencyBackdoor(
-                client_id=client_id,
-                target_label=target_label,
-                epsilon=epsilon,
-                freq_strategy=freq_strategy
-            )
+            if backdoor_factory is None:
+                from core.attacks import FrequencyBackdoor
+                backdoor_factory = lambda cid: FrequencyBackdoor(
+                    client_id=cid,
+                    target_label=target_label,
+                    epsilon=epsilon,
+                    freq_strategy=freq_strategy
+                )
+            self.backdoor = backdoor_factory(client_id)
 
     def set_round(self, round_num):
         """Update the backdoor strategy state (for ANB)."""
@@ -106,14 +108,16 @@ class BackdoorDataset(Dataset):
 
 class PoisonedTestDataset(Dataset):
     """
-    Test dataset where ALL samples are poisoned for ASR evaluation.
+    Test dataset where non-target samples are poisoned for ASR evaluation.
 
-    This is used to measure Attack Success Rate (ASR) by seeing what
-    percentage of poisoned samples are classified as the target label.
+    ASR = P(model predicts target_label | trigger applied, original_label != target_label)
+    Only non-target samples are included to avoid inflating ASR with samples
+    that the model would already predict as target_label without any trigger.
     """
 
     def __init__(self, base_dataset, target_label=0, epsilon=0.1,
-                 freq_strategy='DISPERSED', client_id=0, transform=None):
+                 freq_strategy='DISPERSED', client_id=0, transform=None,
+                 backdoor_factory=None):
         """
         Initialize poisoned test dataset.
 
@@ -129,13 +133,23 @@ class PoisonedTestDataset(Dataset):
         self.target_label = target_label
         self.transform = transform
 
-        # Initialize backdoor
-        self.backdoor = FrequencyBackdoor(
-            client_id=client_id,
-            target_label=target_label,
-            epsilon=epsilon,
-            freq_strategy=freq_strategy
-        )
+        if backdoor_factory is None:
+            from core.attacks import FrequencyBackdoor
+            backdoor_factory = lambda cid: FrequencyBackdoor(
+                client_id=cid,
+                target_label=target_label,
+                epsilon=epsilon,
+                freq_strategy=freq_strategy
+            )
+        self.backdoor = backdoor_factory(client_id)
+
+        # [P1-1 FIX] Pre-filter: only keep samples whose original label != target_label.
+        # Including target-class samples would inflate ASR because the model correctly
+        # predicts them as target_label even without any trigger.
+        self.valid_indices = [
+            i for i in range(len(base_dataset))
+            if base_dataset[i][1] != target_label
+        ]
 
     def set_round(self, round_num):
         """Update the backdoor strategy state (for ANB evaluation)."""
@@ -143,18 +157,19 @@ class PoisonedTestDataset(Dataset):
             self.backdoor.set_round(round_num)
 
     def __len__(self):
-        return len(self.base_dataset)
+        return len(self.valid_indices)
 
     def __getitem__(self, idx):
         """
-        Get a poisoned sample.
+        Get a poisoned sample (original label is guaranteed != target_label).
 
         Returns:
             image: torch.Tensor, poisoned image
             label: int, target label
         """
-        # Get base sample
-        image, original_label = self.base_dataset[idx]
+        # Map idx to a valid (non-target-class) base index
+        real_idx = self.valid_indices[idx]
+        image, original_label = self.base_dataset[real_idx]
 
         # Convert to numpy
         if isinstance(image, Image.Image):
@@ -162,7 +177,7 @@ class PoisonedTestDataset(Dataset):
         else:
             image_np = image
 
-        # Always poison (even if already target label, for consistency)
+        # Inject trigger (original_label != target_label guaranteed, so trigger is applied)
         image_np, _ = self.backdoor(image_np, original_label)
 
         # Convert to PIL for transforms
@@ -187,7 +202,8 @@ class MultiTriggerTestDataset(Dataset):
     """
 
     def __init__(self, base_dataset, malicious_client_ids, target_label=0,
-                 epsilon=0.1, freq_strategy='DISPERSED', transform=None):
+                 epsilon=0.1, freq_strategy='DISPERSED', transform=None,
+                 backdoor_factory=None):
         """
         Initialize multi-trigger test dataset.
 
@@ -206,17 +222,30 @@ class MultiTriggerTestDataset(Dataset):
 
         # Create backdoor instances for each malicious client
         self.backdoors = []
-        for client_id in malicious_client_ids:
-            backdoor = FrequencyBackdoor(
-                client_id=client_id,
+        if backdoor_factory is None:
+            from core.attacks import FrequencyBackdoor
+            backdoor_factory = lambda cid: FrequencyBackdoor(
+                client_id=cid,
                 target_label=target_label,
                 epsilon=epsilon,
                 freq_strategy=freq_strategy
             )
+        for client_id in malicious_client_ids:
+            backdoor = backdoor_factory(client_id)
             self.backdoors.append(backdoor)
 
-        # Calculate samples per trigger
-        self.samples_per_trigger = len(base_dataset) // len(malicious_client_ids)
+        # [P1-1 FIX] Pre-filter: only keep non-target-class samples.
+        # Same rationale as PoisonedTestDataset: target-class samples would not
+        # receive a trigger (backdoor.__call__ skips them) but their label is
+        # already target_label, so they would spuriously inflate ASR.
+        self.valid_indices = [
+            i for i in range(len(base_dataset))
+            if base_dataset[i][1] != target_label
+        ]
+
+        # Distribute valid samples evenly across triggers
+        n_valid = len(self.valid_indices)
+        self.samples_per_trigger = n_valid // len(malicious_client_ids)
         self.total_samples = self.samples_per_trigger * len(malicious_client_ids)
 
     def set_round(self, round_num):
@@ -237,12 +266,13 @@ class MultiTriggerTestDataset(Dataset):
             label: int, target label
             client_id: int, which client's trigger was used
         """
-        # Determine which trigger to use based on index
+        # Determine which trigger to use and which valid sample to poison
         trigger_idx = idx // self.samples_per_trigger
-        base_idx = idx % len(self.base_dataset)
+        valid_idx = idx % self.samples_per_trigger  # position within this trigger's slice
+        real_idx = self.valid_indices[trigger_idx * self.samples_per_trigger + valid_idx]
 
-        # Get base sample
-        image, original_label = self.base_dataset[base_idx]
+        # Get base sample (guaranteed original_label != target_label)
+        image, original_label = self.base_dataset[real_idx]
 
         # Convert to numpy
         if isinstance(image, Image.Image):

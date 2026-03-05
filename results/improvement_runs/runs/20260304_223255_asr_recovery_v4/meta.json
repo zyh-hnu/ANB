@@ -1,0 +1,39 @@
+{
+  "run_id": "20260304_223255_asr_recovery_v4",
+  "started_at": "2026-03-04T22:32:55",
+  "experiment": {
+    "name": "asr_recovery_v4",
+    "condition": "anb_freqfed",
+    "num_rounds": 10,
+    "poison_rate": 0.8,
+    "scaling_factor": 4.5,
+    "local_epochs": 5,
+    "learning_rate": 0.01
+  },
+  "commands": {
+    "modal_run": "modal run modal_train.py::run_single --condition anb_freqfed --num-rounds 10 --poison-rate 0.8 --scaling-factor 4.5 --local-epochs 5 --learning-rate 0.01",
+    "modal_get": "modal volume get safb-results /results/anb_freqfed D:\\1研\\毕业论文\\SAFB\\results\\improvement_runs\\_pull_cache\\20260304_223255_asr_recovery_v4"
+  },
+  "paths": {
+    "run_dir": "D:\\1研\\毕业论文\\SAFB\\results\\improvement_runs\\runs\\20260304_223255_asr_recovery_v4",
+    "run_log": "D:\\1研\\毕业论文\\SAFB\\results\\improvement_runs\\runs\\20260304_223255_asr_recovery_v4\\run.log",
+    "meta": "D:\\1研\\毕业论文\\SAFB\\results\\improvement_runs\\runs\\20260304_223255_asr_recovery_v4\\meta.json",
+    "pull_dir": "D:\\1研\\毕业论文\\SAFB\\results\\improvement_runs\\_pull_cache\\20260304_223255_asr_recovery_v4",
+    "artifacts": "D:\\1研\\毕业论文\\SAFB\\results\\improvement_runs\\runs\\20260304_223255_asr_recovery_v4\\artifacts"
+  },
+  "status": "pull_failed",
+  "metrics": {
+    "acc_final": 70.53,
+    "asr_single_final": 17.21,
+    "asr_multi_final": 19.16,
+    "bypass_final": 100.0,
+    "recall_final": 0.0,
+    "precision_final": 0.0,
+    "f1_final": 0.0
+  },
+  "run_exit_code": 0,
+  "pull_exit_code": 1,
+  "metrics_source": "run_log",
+  "ended_at": "2026-03-05T00:11:16",
+  "duration_sec": 5901.03
+}
