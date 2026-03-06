@@ -12,7 +12,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from PIL import Image
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, Subset
 from torchvision import datasets
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -120,6 +120,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--gamma", type=float, default=0.1)
     parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--pin-memory", type=int, default=1)
+    parser.add_argument("--train-subset", type=int, default=0)
+    parser.add_argument("--test-subset", type=int, default=0)
+    parser.add_argument("--log-interval", type=int, default=0)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", type=str, default="auto", choices=["auto", "cuda", "cpu"])
     parser.add_argument("--eval-multi-client-ids", type=str, default="")
@@ -186,6 +189,14 @@ def _build_backdoor_factory(args: argparse.Namespace):
     )
 
 
+def _subset_dataset(dataset, subset_size: int, seed: int):
+    if subset_size <= 0 or subset_size >= len(dataset):
+        return dataset
+    rng = np.random.default_rng(seed)
+    indices = rng.choice(len(dataset), size=subset_size, replace=False)
+    return Subset(dataset, indices.tolist())
+
+
 def _evaluate_clean(model, loader, criterion, device):
     model.eval()
     total_loss = 0.0
@@ -231,6 +242,9 @@ def _train_one_epoch(
     device,
     target_label: int,
     backdoor_boost_weight: float,
+    epoch: int,
+    total_epochs: int,
+    log_interval: int,
 ):
     model.train()
     running_loss = 0.0
@@ -247,7 +261,8 @@ def _train_one_epoch(
         CentralizedSAFBDataset.MODE_CROSS: 0,
     }
 
-    for images, labels, modes in loader:
+    total_batches = max(1, len(loader))
+    for batch_idx, (images, labels, modes) in enumerate(loader, start=1):
         images = images.to(device)
         labels = labels.to(device)
         modes = modes.to(device)
@@ -276,6 +291,16 @@ def _train_one_epoch(
             if mask.any():
                 mode_total[mode] += mask.sum().item()
                 mode_correct[mode] += (predictions[mask] == labels[mask]).sum().item()
+
+        if log_interval > 0 and (batch_idx % log_interval == 0 or batch_idx == total_batches):
+            running_avg_loss = running_loss / max(1, running_total)
+            running_avg_acc = running_correct / max(1, running_total)
+            print(
+                f"  [Epoch {epoch:03d}/{total_epochs}] batch {batch_idx}/{total_batches} "
+                f"({100.0 * batch_idx / total_batches:5.1f}%) "
+                f"loss={running_avg_loss:.4f} acc={running_avg_acc:.2%}",
+                flush=True,
+            )
 
     epoch_loss = running_loss / max(1, running_total)
     epoch_acc = running_correct / max(1, running_total)
@@ -325,12 +350,20 @@ def main() -> None:
     print(f"Device : {device}")
     print(f"Dataset: {args.dataset}, Epochs: {args.epochs}, Batch: {args.batch_size}")
     print(
+        f"Subset: train={args.train_subset if args.train_subset > 0 else 'full'}, "
+        f"test={args.test_subset if args.test_subset > 0 else 'full'}"
+    )
+    print(f"Loader: workers={args.num_workers}, log_interval={args.log_interval}")
+    print(
         f"Poison: rate={args.poison_rate:.2f}, cross_ratio={args.cross_ratio:.2f}, "
         f"target={args.target_label}, epsilon={args.epsilon:.3f}"
     )
     print("=" * 72)
 
     train_base, test_base, num_classes = _load_dataset(args.dataset, args.data_dir)
+    train_base = _subset_dataset(train_base, args.train_subset, args.seed)
+    test_base = _subset_dataset(test_base, args.test_subset, args.seed + 1)
+    print(f"Train samples: {len(train_base)}, Test samples: {len(test_base)}")
     backdoor_factory = _build_backdoor_factory(args)
 
     train_transform = get_transforms(train=True, dataset=args.dataset)
@@ -436,6 +469,7 @@ def main() -> None:
     best_tradeoff_asr = -1.0
 
     for epoch in range(1, args.epochs + 1):
+        epoch_start = time.time()
         train_dataset.set_round(epoch)
         if hasattr(poisoned_test_loader.dataset, "set_round"):
             poisoned_test_loader.dataset.set_round(epoch)
@@ -450,10 +484,14 @@ def main() -> None:
             device=device,
             target_label=args.target_label,
             backdoor_boost_weight=args.backdoor_boost_weight,
+            epoch=epoch,
+            total_epochs=args.epochs,
+            log_interval=args.log_interval,
         )
         clean_acc, clean_loss = _evaluate_clean(model, clean_test_loader, criterion, device)
         asr = _evaluate_asr(model, poisoned_test_loader, args.target_label, device)
         asr_multi = _evaluate_asr(model, multi_loader, args.target_label, device) if multi_loader else None
+        epoch_time_sec = time.time() - epoch_start
 
         history["train_loss"].append(train_metrics["loss"])
         history["train_acc"].append(train_metrics["acc"])
@@ -471,6 +509,9 @@ def main() -> None:
             f"train_loss={train_metrics['loss']:.4f} train_acc={train_metrics['acc']:.2%} | "
             f"clean={clean_acc:.2%} asr={asr:.2%}"
             + (f" asr_multi={asr_multi:.2%}" if asr_multi is not None else "")
+            + f" | time={epoch_time_sec:.1f}s"
+            ,
+            flush=True,
         )
 
         if asr > best_asr or (asr == best_asr and clean_acc > best_asr_acc):
@@ -513,14 +554,14 @@ def main() -> None:
     with (run_dir / "config.json").open("w", encoding="utf-8") as file:
         json.dump(vars(args), file, ensure_ascii=False, indent=2)
 
-    print("\n" + "=" * 72)
-    print("Training complete")
-    print(f"Final ACC : {summary['final_acc']:.2%}")
-    print(f"Final ASR : {summary['final_asr']:.2%}")
+    print("\n" + "=" * 72, flush=True)
+    print("Training complete", flush=True)
+    print(f"Final ACC : {summary['final_acc']:.2%}", flush=True)
+    print(f"Final ASR : {summary['final_asr']:.2%}", flush=True)
     if summary["final_asr_multi"] is not None:
-        print(f"Final ASR (multi): {summary['final_asr_multi']:.2%}")
-    print(f"Saved to: {run_dir}")
-    print("=" * 72)
+        print(f"Final ASR (multi): {summary['final_asr_multi']:.2%}", flush=True)
+    print(f"Saved to: {run_dir}", flush=True)
+    print("=" * 72, flush=True)
 
 
 if __name__ == "__main__":
