@@ -10,6 +10,79 @@ from datetime import datetime
 from pathlib import Path
 
 
+# .gitignore 内容
+GITIGNORE_CONTENT = """# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# 模型文件
+*.pth
+*.pt
+*.pkl
+*.h5
+*.weights
+
+# 数据文件
+data/
+*.pkl
+*.pickle
+
+# 实验结果 (可选择保留部分)
+results/centralized_runs/
+results/improvement_runs/
+results/figures/experiment/
+results/figures/report/
+!results/figures/readme/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 日志
+*.log
+logs/
+
+# 环境变量
+.env
+.env.local
+
+# 临时文件
+*.tmp
+*.temp
+.cache/
+"""
+
+
 def run_command(cmd, cwd=None, check=True):
     """运行shell命令并返回输出"""
     print(f"执行: {cmd}")
@@ -30,10 +103,29 @@ def run_command(cmd, cwd=None, check=True):
     return result
 
 
+def ensure_gitignore(project_root: Path) -> bool:
+    """确保 .gitignore 文件存在，不存在则创建"""
+    gitignore_path = project_root / ".gitignore"
+    
+    if gitignore_path.exists():
+        print(f".gitignore 已存在: {gitignore_path}")
+        return False
+    
+    gitignore_path.write_text(GITIGNORE_CONTENT, encoding='utf-8')
+    print(f"已创建 .gitignore 文件: {gitignore_path}")
+    return True
+
+
 def main():
     # 项目根目录
     project_root = Path(__file__).parent.parent.resolve()
     print(f"项目目录: {project_root}")
+    
+    # 0. 确保 .gitignore 存在
+    print("\n" + "="*50)
+    print("步骤0: 检查/创建 .gitignore")
+    print("="*50)
+    gitignore_created = ensure_gitignore(project_root)
     
     # 1. 检查git状态
     print("\n" + "="*50)

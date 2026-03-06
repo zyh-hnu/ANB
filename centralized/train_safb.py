@@ -517,17 +517,13 @@ def main() -> None:
         if asr > best_asr or (asr == best_asr and clean_acc > best_asr_acc):
             best_asr = asr
             best_asr_acc = clean_acc
-            torch.save(model.state_dict(), run_dir / "model_best_asr.pth")
 
         if asr >= args.min_asr_for_tradeoff and clean_acc > best_tradeoff_acc:
             best_tradeoff_acc = clean_acc
             best_tradeoff_asr = asr
-            torch.save(model.state_dict(), run_dir / "model_best_tradeoff.pth")
 
         if scheduler is not None:
             scheduler.step()
-
-    torch.save(model.state_dict(), run_dir / "model_final.pth")
 
     summary = {
         "run_name": run_name,
